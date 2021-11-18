@@ -536,13 +536,14 @@ setup_stack (void **esp, int argc, char *argv[])
 
         /* First add all of the command line arguments in descending order, including
            the program name. */
-        for(int i = argc-1; i >= 0; i--)
+        for(int i = argc - 1; i >= 0; i--)
         {
           /* Allocate enough space for the entire string (plus and extra byte for
              '/0'). Copy the string to the stack, and add its reference to the array
               of pointers. */
-          *esp = *esp - sizeof(char)*(strlen(argv[i])+1);
-          memcpy(*esp, argv[i], sizeof(char)*(strlen(argv[i])+1));
+          int len = sizeof(char) * (strlen(argv[i]) + 1);
+          *esp = *esp - len;
+          memcpy(*esp, argv[i], len);
           arg_value_pointers[i] = (uint32_t *)*esp;
         }
         /* Allocate space for & add the null sentinel. */
@@ -554,7 +555,8 @@ setup_stack (void **esp, int argc, char *argv[])
         *esp = *esp - 4;
         for(int i = argc-1; i >= 0; i--)
         {
-          (*(uint32_t **)(*esp)) = arg_value_pointers[i];
+          // (*(uint32_t **)(*esp)) = arg_value_pointers[i];
+          *esp = (uint32_t *) arg_value_pointers[i];
           *esp = *esp - 4;
         }
 
