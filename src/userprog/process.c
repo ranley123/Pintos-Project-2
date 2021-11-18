@@ -45,18 +45,12 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE); /* Makes a copy of the entire command line string, args included. */
 
-  /* Create a new string that contains soley the program name. */
-  char * save_ptr;
-  char * name = strtok_r((char *)file_name, " ", &save_ptr);
-
-  /* Ensure that we weren't passed a NULL command line string (all spaces, for examples). */
-  if (name == NULL)
-  {
-    return -1;
-  }
+  // Modify: separate the user program file name from arguments
+  char * saveptr;
+  char * file_name = strtok_r((char *)file_name, " ", &saveptr);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
 
   /* If we're unable to create the thread, then free its pages and exit. */
   if (tid == TID_ERROR)
@@ -65,7 +59,7 @@ process_execute (const char *file_name)
   }
   else
   {
-    /* If the thread created is a valid thread, then we must disable interupts, and add it to this threads list of child threads. */
+    /* If the thread created is a valid thread, then we must disable interrupts, and add it to this threads list of child threads. */
     current_tid = tid;
     enum intr_level old_level = intr_disable ();
     thread_foreach(*find_tid, NULL);
