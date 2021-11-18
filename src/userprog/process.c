@@ -555,7 +555,7 @@ setup_stack (void **esp, int argc, char *argv[])
         *esp = *esp - 4;
         for(int i = argc-1; i >= 0; i--)
         {
-          (*((uint32_t *)esp)) = arg_value_pointers[i];
+          (*(uint32_t **)*esp) = arg_value_pointers[i];
           *esp = *esp - 4;
         }
 
