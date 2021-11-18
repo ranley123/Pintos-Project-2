@@ -47,10 +47,10 @@ process_execute (const char *file_name)
 
   // Modify: separate the user program file name from arguments
   char * saveptr;
-  char * file_name = strtok_r((char *)file_name, " ", &saveptr);
+  char * name = strtok_r((char *)file_name, " ", &saveptr);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
 
   /* If we're unable to create the thread, then free its pages and exit. */
   if (tid == TID_ERROR)
@@ -292,11 +292,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* The number of arguments passed in on the command line (includes the program name),
      so argc will always be at least 1. */
   int argc = 0;
+  save_ptr = (char *) file_name;
 
   /* Tokenize the command line string with a " " (space) as a delimeter. */
-  for(token = strtok_r((char *)file_name, " ", &save_ptr); token != NULL;
-    token = strtok_r(NULL, " ", &save_ptr))
-  {
+  while((token = strtok_r(save_ptr, " ", &save_ptr)) != NULL){
     /* Add token to the array of command line arguments. */
     argv[argc] = token;
     argc++; /* Increment the number of args */
