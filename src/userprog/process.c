@@ -292,11 +292,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   /* The number of arguments passed in on the command line (includes the program name),
      so argc will always be at least 1. */
   int argc = 0;
+  save_ptr = (char *) file_name;
 
   /* Tokenize the command line string with a " " (space) as a delimeter. */
-  for(token = strtok_r((char *)file_name, " ", &save_ptr); token != NULL;
-    token = strtok_r(NULL, " ", &save_ptr))
-  {
+  while((token = strtok_r(save_ptr, " ", &save_ptr)) != NULL){
     /* Add token to the array of command line arguments. */
     argv[argc] = token;
     argc++; /* Increment the number of args */
