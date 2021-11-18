@@ -47,10 +47,10 @@ process_execute (const char *file_name)
 
   // Modify: separate the user program file name from arguments
   char * saveptr;
-  char * file_name = strtok_r((char *)file_name, " ", &saveptr);
+  char * name = strtok_r((char *)file_name, " ", &saveptr);
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
 
   /* If we're unable to create the thread, then free its pages and exit. */
   if (tid == TID_ERROR)
