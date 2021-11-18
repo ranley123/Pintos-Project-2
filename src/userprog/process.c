@@ -532,7 +532,7 @@ setup_stack (void **esp, int argc, char *argv[])
         /* Offset PHYS_BASE as instructed. */
         *esp = PHYS_BASE - 12;
         /* A list of addresses to the values that are intially added to the stack.  */
-        uint32_t * arg_value_pointers[argc];
+        uint32_t arg_value_pointers[argc];
 
         /* First add all of the command line arguments in descending order, including
            the program name. */
@@ -544,7 +544,7 @@ setup_stack (void **esp, int argc, char *argv[])
           int len = sizeof(char) * (strlen(argv[i]) + 1);
           *esp = *esp - len;
           memcpy(*esp, argv[i], len);
-          arg_value_pointers[i] = (uint32_t *)*esp;
+          arg_value_pointers[i] = (uint32_t) *esp;
         }
         /* Allocate space for & add the null sentinel. */
         *esp = *esp - 4;
@@ -556,7 +556,7 @@ setup_stack (void **esp, int argc, char *argv[])
         for(int i = argc-1; i >= 0; i--)
         {
           // (*(uint32_t **)(*esp)) = arg_value_pointers[i];
-          *esp = (uint32_t *) arg_value_pointers[i];
+          *esp = arg_value_pointers[i];
           *esp = *esp - 4;
         }
 
