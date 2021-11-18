@@ -516,6 +516,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static void push_args(void **esp, int argc, char *argv[]){
   /* Offset PHYS_BASE as instructed. */
   *esp = PHYS_BASE - 12;
+  const int OFFSET = 4;
   /* A list of addresses to the values that are intially added to the stack.  */
   uint32_t arg_pointers[argc];
 
@@ -560,7 +561,7 @@ setup_stack (void **esp, int argc, char *argv[])
 {
   uint8_t *kpage;
   bool success = false;
-  const int OFFSET = 4;
+  
 
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL)
