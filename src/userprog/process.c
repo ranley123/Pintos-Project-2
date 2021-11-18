@@ -518,6 +518,7 @@ setup_stack (void **esp, int argc, char *argv[])
 {
   uint8_t *kpage;
   bool success = false;
+  const int OFFSET = 4;
 
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
   if (kpage != NULL)
@@ -532,43 +533,39 @@ setup_stack (void **esp, int argc, char *argv[])
         /* Offset PHYS_BASE as instructed. */
         *esp = PHYS_BASE - 12;
         /* A list of addresses to the values that are intially added to the stack.  */
-        uint32_t arg_value_pointers[argc];
+        uint32_t arg_pointers[argc];
 
-        /* First add all of the command line arguments in descending order, including
-           the program name. */
+        // argument values from argv[argc - 1] to argv[0]
         for(int i = argc - 1; i >= 0; i--)
         {
-          /* Allocate enough space for the entire string (plus and extra byte for
-             '/0'). Copy the string to the stack, and add its reference to the array
-              of pointers. */
           int len = sizeof(char) * (strlen(argv[i]) + 1);
           *esp = *esp - len;
           memcpy(*esp, argv[i], len);
-          arg_value_pointers[i] = (uint32_t) *esp;
-        }
-        /* Allocate space for & add the null sentinel. */
-        *esp = *esp - 4;
-        (*(int *)(*esp)) = 0;
 
-        /* Push onto the stack each char* in arg_value_pointers[] (each of which
-           references an argument that was previously added to the stack). */
-        *esp = *esp - 4;
+          arg_pointers[i] = (uint32_t) *esp;
+        }
+
+        /* Allocate space for & add the null sentinel. */
+        *esp = *esp - OFFSET;
+        (*(int *)(*esp)) = 0;
+        *esp = *esp - OFFSET;
+
+        // addresses from argv[argc - 1] to argv[0]
         for(int i = argc-1; i >= 0; i--)
         {
-          (*(uint32_t *)*esp) = arg_value_pointers[i];
-          *esp = *esp - 4;
+          (*(uint32_t *)*esp) = arg_pointers[i];
+          *esp = *esp - OFFSET;
         }
 
-        /* Push onto the stack a pointer to the pointer of the address of the
-           first argument in the list of arguments. */
-        (*(uintptr_t **)(*esp)) = *esp + 4;
+        // address of argv[0]
+        (*(uintptr_t **)(*esp)) = *esp + OFFSET;
+        *esp = *esp - OFFSET;
 
-        /* Push onto the stack the number of program arguments. */
-        *esp = *esp - 4;
+        // number of argv = argc
         *(int *)(*esp) = argc;
+        *esp = *esp - OFFSET;
 
-        /* Push onto the stack a fake return address, which completes stack initialization. */
-        *esp = *esp - 4;
+        // return address
         (*(int *)(*esp)) = 0;
       }
       else
