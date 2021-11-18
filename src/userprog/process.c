@@ -28,6 +28,8 @@ static struct thread * matching_thread;
 /* A global variable - the tid of the thread that we are looking for in the thread list (-1 if not found (set in functions)). */
 static tid_t current_tid;
 
+static void push_args(void **esp, int argc, char *argv[]);
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -511,6 +513,46 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
   return true;
 }
 
+static void push_args(void **esp, int argc, char *argv[]){
+  /* Offset PHYS_BASE as instructed. */
+  *esp = PHYS_BASE - 12;
+  /* A list of addresses to the values that are intially added to the stack.  */
+  uint32_t arg_pointers[argc];
+
+  // argument values from argv[argc - 1] to argv[0]
+  for(int i = argc - 1; i >= 0; i--)
+  {
+    int len = sizeof(char) * (strlen(argv[i]) + 1);
+    *esp = *esp - len;
+    memcpy(*esp, argv[i], len);
+
+    arg_pointers[i] = (uint32_t) *esp;
+  }
+
+  /* Allocate space for & add the null sentinel. */
+  *esp = *esp - OFFSET;
+  (*(int *)(*esp)) = 0;
+  *esp = *esp - OFFSET;
+
+  // addresses from argv[argc - 1] to argv[0]
+  for(int i = argc-1; i >= 0; i--)
+  {
+    (*(uint32_t *)*esp) = arg_pointers[i];
+    *esp = *esp - OFFSET;
+  }
+
+  // address of argv[0]
+  (*(uintptr_t **)(*esp)) = *esp + OFFSET;
+  *esp = *esp - OFFSET;
+
+  // number of argv = argc
+  *(int *)(*esp) = argc;
+  *esp = *esp - OFFSET;
+
+  // return address
+  (*(int *)(*esp)) = 0;
+}
+
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
@@ -529,44 +571,7 @@ setup_stack (void **esp, int argc, char *argv[])
         /* Stack initialization code insipired by the work of pindexis
         (the full GitHub link of which is available in Design2.txt).
         Mainly used to determine correct pointer types. */
-
-        /* Offset PHYS_BASE as instructed. */
-        *esp = PHYS_BASE - 12;
-        /* A list of addresses to the values that are intially added to the stack.  */
-        uint32_t arg_pointers[argc];
-
-        // argument values from argv[argc - 1] to argv[0]
-        for(int i = argc - 1; i >= 0; i--)
-        {
-          int len = sizeof(char) * (strlen(argv[i]) + 1);
-          *esp = *esp - len;
-          memcpy(*esp, argv[i], len);
-
-          arg_pointers[i] = (uint32_t) *esp;
-        }
-
-        /* Allocate space for & add the null sentinel. */
-        *esp = *esp - OFFSET;
-        (*(int *)(*esp)) = 0;
-        *esp = *esp - OFFSET;
-
-        // addresses from argv[argc - 1] to argv[0]
-        for(int i = argc-1; i >= 0; i--)
-        {
-          (*(uint32_t *)*esp) = arg_pointers[i];
-          *esp = *esp - OFFSET;
-        }
-
-        // address of argv[0]
-        (*(uintptr_t **)(*esp)) = *esp + OFFSET;
-        *esp = *esp - OFFSET;
-
-        // number of argv = argc
-        *(int *)(*esp) = argc;
-        *esp = *esp - OFFSET;
-
-        // return address
-        (*(int *)(*esp)) = 0;
+        push_args(esp, argc, argv);
       }
       else
         palloc_free_page (kpage);
