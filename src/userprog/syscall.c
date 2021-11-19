@@ -19,6 +19,8 @@ static void syscall_handler (struct intr_frame *);
 call argument). */
 void get_stack_arguments (struct intr_frame *f, int * args, int num_of_args);
 
+bool is_valid_ptr(const void *usr_ptr);
+
 /* Creates a struct to insert files and their respective file descriptor into
    the file_descriptors list for the current thread. */
 struct thread_file
@@ -28,8 +30,20 @@ struct thread_file
     int file_descriptor;
 };
 
+
 /* Lock is in charge of ensuring that only one process can access the file system at one time. */
 struct lock lock_filesys;
+
+bool
+is_valid_ptr (const void *usr_ptr)
+{
+  if (is_valid_uvaddr (usr_ptr))
+    {
+      return (pagedir_get_page (thread_current ()->pagedir, usr_ptr)) != NULL;
+    }
+  return false;
+}
+
 
 void
 syscall_init (void)
@@ -38,6 +52,7 @@ syscall_init (void)
   lock_init(&lock_filesys);
 
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+
 }
 
 /* Handles a system call initiated by a user program. */
@@ -53,8 +68,9 @@ syscall_handler (struct intr_frame *f UNUSED)
     /* Stores the physical page pointer. */
     void * phys_page_ptr;
 
-		/* Get the value of the system call (based on enum) and call corresponding syscall function. */
-		switch(*(int *) f->esp)
+		int syscall_num = *(int *)f->esp;
+
+		switch(syscall_num)
 		{
 			case SYS_HALT:
         /* Call the halt() function, which requires no arguments */
@@ -73,9 +89,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 				/* The first argument of exec is the entire command line text for executing the program */
 				get_stack_arguments(f, &args[0], 1);
 
-        /* Ensures that converted address is valid. */
-        phys_page_ptr = (void *) pagedir_get_page(thread_current()->pagedir, (const void *) args[0]);
-        if (phys_page_ptr == NULL)
+        if (!is_valid_ptr((const void *)args[0]))
         {
           exit(-1);
         }
@@ -99,10 +113,7 @@ syscall_handler (struct intr_frame *f UNUSED)
            and the second argument is the size of the file. */
 				get_stack_arguments(f, &args[0], 2);
         check_buffer((void *)args[0], args[1]);
-
-        /* Ensures that converted address is valid. */
-        phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[0]);
-        if (phys_page_ptr == NULL)
+        if (!is_valid_ptr((const void *)args[0]));
         {
           exit(-1);
         }
@@ -115,10 +126,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 			case SYS_REMOVE:
         /* The first argument of remove is the file name to be removed. */
         get_stack_arguments(f, &args[0], 1);
-
-        /* Ensures that converted address is valid. */
-        phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[0]);
-        if (phys_page_ptr == NULL)
+        if (!is_valid_ptr((const void *)args[0]))
         {
           exit(-1);
         }
@@ -132,9 +140,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument is the name of the file to be opened. */
         get_stack_arguments(f, &args[0], 1);
 
-        /* Ensures that converted address is valid. */
-        phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[0]);
-        if (phys_page_ptr == NULL)
+        if (!is_valid_ptr((const void *)args[0]))
         {
           exit(-1);
         }
@@ -161,9 +167,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
 
-        /* Ensures that converted address is valid. */
-        phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
-        if (phys_page_ptr == NULL)
+        if (!is_valid_ptr((const void *)args[1]))
         {
           exit(-1);
         }
@@ -180,10 +184,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
-
-        /* Ensures that converted address is valid. */
-        phys_page_ptr = pagedir_get_page(thread_current()->pagedir, (const void *) args[1]);
-        if (phys_page_ptr == NULL)
+        if (!is_valid_ptr((const void *)args[1]))
         {
           exit(-1);
         }
@@ -324,14 +325,13 @@ bool remove (const char *file)
 }
 
 /* Opens a file with the given name, and returns the file descriptor assigned by the
-   thread that opened it. Inspiration derived from GitHub user ryantimwilson (see
-   Design2.txt for attribution link). */
-int open (const char *file)
+   thread that opened it. */
+int open (const char *filename)
 {
   /* Make sure that only one process can get ahold of the file system at one time. */
   lock_acquire(&lock_filesys);
 
-  struct file* f = filesys_open(file);
+  struct file* f = filesys_open(filename);
 
   /* If no file was created, then return -1. */
   if(f == NULL)
