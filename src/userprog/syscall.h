@@ -8,7 +8,6 @@ typedef int pid_t;
 
 void syscall_init (void);
 
-/* Projects 2 and later. */
 void halt (void) NO_RETURN;
 void exit (int status) NO_RETURN;
 pid_t exec (const char *file);
