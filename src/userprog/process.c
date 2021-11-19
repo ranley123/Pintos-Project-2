@@ -65,7 +65,10 @@ process_execute (const char *file_name)
     current_tid = tid;
     enum intr_level old_level = intr_disable ();
     thread_foreach(*find_tid, NULL);
+    lock_acquire(&thread_current()->child_lock);
     list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
+    lock_release(&thread_current()->child_lock);
+
     intr_set_level (old_level);
   }
   return tid;
@@ -125,6 +128,8 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   /* Look to see if the child thread in question is our child. */
+  lock_acquire(&thread_current()->child_lock);
+
   for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
   {
       struct thread *t = list_entry (temp, struct thread, child_elem);
@@ -138,6 +143,8 @@ process_wait (tid_t child_tid UNUSED)
   /* If not our child, we musn't wait. */
   if(child_thread == NULL || child_thread->is_waited)
   {
+    lock_release(&thread_current()->child_lock);
+    
     return -1;
   }
 
@@ -153,7 +160,9 @@ process_wait (tid_t child_tid UNUSED)
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
      
+  lock_release(&thread_current()->child_lock);
   sema_down(&child_thread->being_waited_on);
+
   
   // 
   return child_thread->exit_status;
