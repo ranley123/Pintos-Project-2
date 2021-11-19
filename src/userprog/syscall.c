@@ -251,20 +251,17 @@ int write (int fd, const void *buffer, unsigned length)
     return 0;
   }
 
-  struct list_elem* cur = list_front(&thread_current()->file_descriptors);
-  while(cur != NULL){
-    struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
-    if (t->file_descriptor == fd)
-    {
-      int bytes_written = (int) file_write(t->file_addr, buffer, length);
-      lock_release(&lock_filesys);
-      return bytes_written;
-    }
-    cur = cur->next;
+  struct thread_file *t = find_thread_file_by_fd(fd);
+  if(t == NULL){
+    lock_release(&lock_filesys);
+    return 0;
   }
-
-  lock_release(&lock_filesys);
-  return 0;
+  else{
+    int bytes_written = (int) file_write(t->file_addr, buffer, length);
+    lock_release(&lock_filesys);
+    return bytes_written;
+  }
+  
 }
 
 /* Executes the program with the given file name. */
@@ -566,4 +563,17 @@ void get_stack_arguments (struct intr_frame *f, int *args, int argc)
       check_valid_addr((const void *) ptr);
       args[i] = *ptr;
     }
+}
+
+struct thread_file* find_thread_file_by_fd(int fd){
+  struct list_elem* cur = list_front(&thread_current()->file_descriptors);
+  while(cur != NULL){
+    struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
+    if (t->file_descriptor == fd)
+    {
+      return t;
+    }
+    cur = cur->next;
+  }
+  return NULL;
 }
