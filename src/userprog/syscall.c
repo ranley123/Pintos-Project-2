@@ -37,7 +37,7 @@ struct lock lock_filesys;
 bool
 is_valid_ptr (const void *usr_ptr)
 {
-  if (usr_ptr != NULL && is_user_vaddr (usr_ptr))
+  if (is_valid_uvaddr (usr_ptr))
     {
       return (pagedir_get_page (thread_current ()->pagedir, usr_ptr)) != NULL;
     }
