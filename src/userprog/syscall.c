@@ -14,7 +14,7 @@
 #include "threads/malloc.h"
 
 static void syscall_handler (struct intr_frame *);
-void * check_valid_page(const void *ptr);
+void * check_valid_page(void *ptr);
 
 /* Get up to three arguments from a programs stack (they directly follow the system
 call argument). */
@@ -74,7 +74,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 				/* The first argument of exec is the entire command line text for executing the program */
 				get_stack_arguments(f, &args[0], 1);
 
-        phys_page_ptr = check_valid_page((const void *) args[0]);
+        phys_page_ptr = check_valid_page((void *) args[0]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -98,7 +98,7 @@ syscall_handler (struct intr_frame *f UNUSED)
            and the second argument is the size of the file. */
 				get_stack_arguments(f, &args[0], 2);
         check_buffer((void *)args[0], args[1]);
-        phys_page_ptr = check_valid_page((const void *) args[0]);
+        phys_page_ptr = check_valid_page((void *) args[0]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -112,7 +112,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument of remove is the file name to be removed. */
         get_stack_arguments(f, &args[0], 1);
 
-        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        void * phys_page_ptr = check_valid_page((void *) args[0]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -153,7 +153,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
 
-        phys_page_ptr = check_valid_page((const void *) args[1]);
+        phys_page_ptr = check_valid_page((void *) args[1]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -171,7 +171,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
 
-        phys_page_ptr = check_valid_page((const void *) args[1]);
+        phys_page_ptr = check_valid_page((void *) args[1]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -251,22 +251,19 @@ int write (int fd, const void *buffer, unsigned length)
     return 0;
   }
 
-  /* Check to see if the given fd is open and owned by the current process. If so, return
-     the number of bytes that were written to the file. */
-  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
-  {
-      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
-      if (t->file_descriptor == fd)
-      {
-        int bytes_written = (int) file_write(t->file_addr, buffer, length);
-        lock_release(&lock_filesys);
-        return bytes_written;
-      }
+  struct list_elem* cur = list_front(&thread_current()->file_descriptors);
+  while(cur != NULL){
+    struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
+    if (t->file_descriptor == fd)
+    {
+      int bytes_written = (int) file_write(t->file_addr, buffer, length);
+      lock_release(&lock_filesys);
+      return bytes_written;
+    }
+    cur = cur->next;
   }
 
   lock_release(&lock_filesys);
-
-  /* If we can't write to the file, return 0. */
   return 0;
 }
 
@@ -537,11 +534,12 @@ void check_valid_addr (const void *ptr_to_check)
 	}
 }
 
-void * check_valid_page(const void *ptr){
-  if (ptr == NULL || pagedir_get_page(thread_current()->pagedir, ptr) == NULL)
+void * check_valid_page(void *ptr){
+  if (ptr == NULL || pagedir_get_page(thread_current()->pagedir, (const void *)ptr) == NULL)
   {
     return NULL;
   }
+
   return pagedir_get_page(thread_current()->pagedir, ptr);
 
 }
@@ -558,14 +556,11 @@ void check_buffer (void *buff_to_check, unsigned size)
     }
 }
 
-/* Code inspired by GitHub Repo created by ryantimwilson (full link in Design2.txt).
-   Get up to three arguments from a programs stack (they directly follow the system
-   call argument). */
-void get_stack_arguments (struct intr_frame *f, int *args, int num_of_args)
+void get_stack_arguments (struct intr_frame *f, int *args, int argc)
 {
   int i;
   int *ptr;
-  for (i = 0; i < num_of_args; i++)
+  for (i = 0; i < argc; i++)
     {
       ptr = (int *) f->esp + i + 1;
       check_valid_addr((const void *) ptr);
