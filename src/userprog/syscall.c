@@ -14,6 +14,7 @@
 #include "threads/malloc.h"
 
 static void syscall_handler (struct intr_frame *);
+void * check_valid_page(const void *ptr);
 
 /* Get up to three arguments from a programs stack (they directly follow the system
 call argument). */
@@ -73,8 +74,11 @@ syscall_handler (struct intr_frame *f UNUSED)
 				/* The first argument of exec is the entire command line text for executing the program */
 				get_stack_arguments(f, &args[0], 1);
 
-      
-        args[0] = (int) check_valid_page((const void *) args[0]);
+        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        if(phys_page_ptr == NULL){
+          exit(-1);
+        }
+        args[0] = (int) phys_page_ptr;
 
         /* Return the result of the exec() function in the eax register. */
 				f->eax = exec((const char *) args[0]);
@@ -94,8 +98,11 @@ syscall_handler (struct intr_frame *f UNUSED)
            and the second argument is the size of the file. */
 				get_stack_arguments(f, &args[0], 2);
         check_buffer((void *)args[0], args[1]);
-        
-        args[0] = (int) check_valid_page((const void *) args[0]);
+        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        if(phys_page_ptr == NULL){
+          exit(-1);
+        }
+        args[0] = (int) phys_page_ptr;
 
         /* Return the result of the create() function in the eax register. */
         f->eax = create((const char *) args[0], (unsigned) args[1]);
@@ -105,7 +112,11 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument of remove is the file name to be removed. */
         get_stack_arguments(f, &args[0], 1);
 
-        args[0] = (int) check_valid_page((const void *) args[0]);
+        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        if(phys_page_ptr == NULL){
+          exit(-1);
+        }
+        args[0] = (int) phys_page_ptr;
 
         /* Return the result of the remove() function in the eax register. */
         f->eax = remove((const char *) args[0]);
@@ -115,7 +126,11 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument is the name of the file to be opened. */
         get_stack_arguments(f, &args[0], 1);
 
-        args[0] = (int) check_valid_page((const void *) args[0]);
+        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        if(phys_page_ptr == NULL){
+          exit(-1);
+        }
+        args[0] = (int) phys_page_ptr;
 
         /* Return the result of the remove() function in the eax register. */
         f->eax = open((const char *) args[0]);
@@ -138,7 +153,11 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
 
-        args[1] = (int) check_valid_page((const void *) args[1]);
+        void * phys_page_ptr = check_valid_page((const void *) args[1]);
+        if(phys_page_ptr == NULL){
+          exit(-1);
+        }
+        args[1] = (int) phys_page_ptr;
 
         /* Return the result of the read() function in the eax register. */
         f->eax = read(args[0], (void *) args[1], (unsigned) args[2]);
@@ -152,7 +171,11 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
 
-        args[1] = (int) check_valid_page((const void *) args[1]);
+        void * phys_page_ptr = check_valid_page((const void *) args[1]);
+        if(phys_page_ptr == NULL){
+          exit(-1);
+        }
+        args[1] = (int) phys_page_ptr;
 
         /* Return the result of the write() function in the eax register. */
         f->eax = write(args[0], (const void *) args[1], (unsigned) args[2]);
@@ -514,10 +537,10 @@ void check_valid_addr (const void *ptr_to_check)
 	}
 }
 
-void* check_valid_page(const void *ptr){
+void * check_valid_page(const void *ptr){
   if (ptr == NULL || pagedir_get_page(thread_current()->pagedir, ptr) == NULL)
   {
-    exit(-1);
+    return NULL;
   }
   return pagedir_get_page(thread_current()->pagedir, ptr);
 
