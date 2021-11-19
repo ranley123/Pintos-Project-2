@@ -141,7 +141,7 @@ process_wait (tid_t child_tid UNUSED)
     return -1;
   }
 
-  lock_acquire(&thread_current()->lock_child);
+  // lock_acquire(&thread_current()->lock_child);
 
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
@@ -150,7 +150,7 @@ process_wait (tid_t child_tid UNUSED)
 
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
-     lock_release(&thread_current()->lock_child);
+    //  lock_release(&thread_current()->lock_child);
   sema_down(&child_thread->being_waited_on);
   // 
   return child_thread->exit_status;
