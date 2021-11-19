@@ -141,9 +141,9 @@ process_wait (tid_t child_tid UNUSED)
     return -1;
   }
 
-  lock_acquire(&thread_current()->child_lock);
-  child_thread->is_waited = true;
-  lock_release(&thread_current()->child_lock);
+  // lock_acquire(&thread_current()->child_lock);
+  // child_thread->is_waited = true;
+  // lock_release(&thread_current()->child_lock);
 
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
