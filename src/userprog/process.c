@@ -149,12 +149,7 @@ process_wait (tid_t child_tid UNUSED)
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
   sema_down(&child_thread->being_waited_on);
-  int status = child_thread->exit_status;
-
-  free(child_thread);
-
-  /* After our kiddo is dead, we return its exit status. */
-  return status;
+  return child_thread->exit_status;
 }
 
 /* Free the current process's resources. */
