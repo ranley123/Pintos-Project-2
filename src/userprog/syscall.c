@@ -253,16 +253,8 @@ int write (int fd, const void *buffer, unsigned length)
   }
 
   struct thread_file *t = find_thread_file_by_fd(fd);
-  if(t == NULL){
-    lock_release(&lock_filesys);
-    return 0;
-  }
-  else{
-    int bytes_written = (int) file_write(t->file_addr, buffer, length);
-    lock_release(&lock_filesys);
-    return bytes_written;
-  }
-  
+  lock_release(&lock_filesys);
+  return t == NULL? 0: (int) file_write(t->file_addr, buffer, length);
 }
 
 /* Executes the program with the given file name. */
@@ -350,22 +342,9 @@ int filesize (int fd)
     return -1;
   }
 
-  /* Check to see if the given fd is open and owned by the current process. If so, return
-     the length of the file. */
-  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
-  {
-      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
-      if (t->file_descriptor == fd)
-      {
-        lock_release(&lock_filesys);
-        return (int) file_length(t->file_addr);
-      }
-  }
-
+  struct thread_file *t = find_thread_file_by_fd(fd);
   lock_release(&lock_filesys);
-
-  /* Return -1 if we can't find the file. */
-  return -1;
+  return t == NULL? -1: (int) file_length(t->file_addr);
 }
 
 /* Reads size bytes from the file open as fd into buffer. Returns the number of bytes actually read
@@ -392,23 +371,9 @@ int read (int fd, void *buffer, unsigned length)
     return 0;
   }
 
-  /* Look to see if the fd is in our list of file descriptors. If found,
-     then we read from the file and return the number of bytes written. */
-  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
-  {
-      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
-      if (t->file_descriptor == fd)
-      {
-        lock_release(&lock_filesys);
-        int bytes = (int) file_read(t->file_addr, buffer, length);
-        return bytes;
-      }
-  }
-
+  struct thread_file *t = find_thread_file_by_fd(fd);
   lock_release(&lock_filesys);
-
-  /* If we can't read from the file, return -1. */
-  return -1;
+  return t == NULL? -1: (int) file_read(t->file_addr, buffer, length);
 }
 
 
