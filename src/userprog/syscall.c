@@ -127,7 +127,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument is the name of the file to be opened. */
         get_stack_arguments(f, &args[0], 1);
 
-        phys_page_ptr = check_valid_page((void *) args[0]);
+        phys_page_ptr = check_valid_page((const void *) args[0]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -304,7 +304,8 @@ bool remove (const char *file)
 }
 
 /* Opens a file with the given name, and returns the file descriptor assigned by the
-   thread that opened it. */
+   thread that opened it. Inspiration derived from GitHub user ryantimwilson (see
+   Design2.txt for attribution link). */
 int open (const char *file)
 {
   /* Make sure that only one process can get ahold of the file system at one time. */
@@ -322,13 +323,11 @@ int open (const char *file)
   /* Create a struct to hold the file/fd, for use in a list in the current process.
      Increment the fd for future files. Release our lock and return the fd as an int. */
   struct thread_file *new_file = malloc(sizeof(struct thread_file));
-  int fd = thread_current()->cur_fd;
-  thread_current()->cur_fd++;
-  
   new_file->file_addr = f;
+  int fd = thread_current ()->cur_fd;
+  thread_current ()->cur_fd++;
   new_file->file_descriptor = fd;
   list_push_front(&thread_current ()->file_descriptors, &new_file->file_elem);
-
   lock_release(&lock_filesys);
   return fd;
 }
@@ -401,17 +400,34 @@ void seek (int fd, unsigned position)
    expressed in bytes from the beginning of the file. */
 unsigned tell (int fd)
 {
+  /* list element to iterate the list of file descriptors. */
+  struct list_elem *temp;
+
   lock_acquire(&lock_filesys);
 
-  struct thread_file *t = find_thread_file_by_fd(fd);
-  if(t == NULL){
+  /* If there are no files in our file_descriptors list, return immediately, */
+  if (list_empty(&thread_current()->file_descriptors))
+  {
     lock_release(&lock_filesys);
-    return - 1;
+    return -1;
   }
-  unsigned position = (unsigned) file_tell(t->file_addr);
+
+  /* Look to see if the given fd is in our list of file_descriptors. If so, then we
+     call file_tell() and return the position. */
+  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
+  {
+      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
+      if (t->file_descriptor == fd)
+      {
+        unsigned position = (unsigned) file_tell(t->file_addr);
+        lock_release(&lock_filesys);
+        return position;
+      }
+  }
+
   lock_release(&lock_filesys);
-  return position;
-  
+
+  return -1;
 }
 
 /* Closes file descriptor fd. Exiting or terminating a process implicitly closes

@@ -107,7 +107,6 @@ start_process (void *file_name_)
    child of the calling process, or if process_wait() has already
    been successfully called for the given TID, returns -1
    immediately, without waiting.
-
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
@@ -149,11 +148,10 @@ process_wait (tid_t child_tid UNUSED)
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
   sema_down(&child_thread->being_waited_on);
-  int status = child_thread->exit_status;
-  free(child_thread);
+
 
   /* After our kiddo is dead, we return its exit status. */
-  return status;
+  return child_thread->exit_status;
 }
 
 /* Free the current process's resources. */
@@ -458,15 +456,11 @@ validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
 /* Loads a segment starting at offset OFS in FILE at address
    UPAGE.  In total, READ_BYTES + ZERO_BYTES bytes of virtual
    memory are initialized, as follows:
-
         - READ_BYTES bytes at UPAGE must be read from FILE
           starting at offset OFS.
-
         - ZERO_BYTES bytes at UPAGE + READ_BYTES must be zeroed.
-
    The pages initialized by this function must be writable by the
    user process if WRITABLE is true, read-only otherwise.
-
    Return true if successful, false if a memory allocation error
    or disk read error occurs. */
 static bool
