@@ -253,8 +253,13 @@ int write (int fd, const void *buffer, unsigned length)
   }
 
   struct thread_file *t = find_thread_file_by_fd(fd);
+  if(t == NULL){
+    lock_release(&lock_filesys);
+    return 0;
+  }
+  int bytes = (int) file_write(t->file_addr, buffer, length);
   lock_release(&lock_filesys);
-  return t == NULL? 0: (int) file_write(t->file_addr, buffer, length);
+  return bytes;
 }
 
 /* Executes the program with the given file name. */
@@ -336,8 +341,14 @@ int filesize (int fd)
   lock_acquire(&lock_filesys);
 
   struct thread_file *t = find_thread_file_by_fd(fd);
+  if(t == NULL){
+    lock_release(&lock_filesys);
+    return -1;
+  }
+
+  int len = (int) file_length(t->file_addr);
   lock_release(&lock_filesys);
-  return t == NULL? -1: (int) file_length(t->file_addr);
+  return len;
 }
 
 /* Reads size bytes from the file open as fd into buffer. Returns the number of bytes actually read
@@ -365,8 +376,14 @@ int read (int fd, void *buffer, unsigned length)
   }
 
   struct thread_file *t = find_thread_file_by_fd(fd);
+  if(t == NULL){
+    lock_release(&lock_filesys);
+    return -1;
+  }
+  
+  int bytes = (int) file_read(t->file_addr, buffer, length);
   lock_release(&lock_filesys);
-  return t == NULL? -1: (int) file_read(t->file_addr, buffer, length);
+  return bytes;
 }
 
 
@@ -449,13 +466,7 @@ void close (int fd)
 
   lock_acquire(&lock_filesys);
 
-  /* If there are no files in our file_descriptors list, return immediately, */
-  if (list_empty(&thread_current()->file_descriptors))
-  {
-    lock_release(&lock_filesys);
-    return;
-  }
-
+  
   /* Look to see if the given fd is in our list of file_descriptors. If so, then we
      close the file and remove it from our list of file_descriptors. */
   for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
@@ -469,10 +480,14 @@ void close (int fd)
         return;
       }
   }
-
+  struct thread_file* t = find_thread_file_by_fd(fd);
+  if(t == NULL){
+    lock_release(&lock_filesys);
+    return;
+  }
+  file_close(t->file_addr);
+  list_remove(&t->file_elem);
   lock_release(&lock_filesys);
-
-  return;
 }
 
 /* Check to make sure that the given pointer is in user space,
