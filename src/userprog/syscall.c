@@ -246,7 +246,7 @@ int write (int fd, const void *buffer, unsigned length)
     return length;
 	}
   /* If the user passes STDIN or no files are present, then return 0. */
-  if (fd == 0 || list_empty(&thread_current()->file_descriptors))
+  if (fd == 0)
   {
     lock_release(&lock_filesys);
     return 0;
@@ -335,13 +335,6 @@ int filesize (int fd)
 
   lock_acquire(&lock_filesys);
 
-  /* If there are no files associated with this thread, return -1 */
-  if (list_empty(&thread_current()->file_descriptors))
-  {
-    lock_release(&lock_filesys);
-    return -1;
-  }
-
   struct thread_file *t = find_thread_file_by_fd(fd);
   lock_release(&lock_filesys);
   return t == NULL? -1: (int) file_length(t->file_addr);
@@ -365,7 +358,7 @@ int read (int fd, void *buffer, unsigned length)
   }
 
   /* We can't read from standard out, or from a file if we have none open. */
-  if (fd == 1 || list_empty(&thread_current()->file_descriptors))
+  if (fd == 1)
   {
     lock_release(&lock_filesys);
     return 0;
@@ -532,6 +525,10 @@ void get_stack_arguments (struct intr_frame *f, int *args, int argc)
 }
 
 struct thread_file* find_thread_file_by_fd(int fd){
+  if(list_empty(&thread_current()->file_descriptors)){
+    return NULL;
+  }
+
   struct list_elem* cur = list_front(&thread_current()->file_descriptors);
   while(cur != NULL){
     struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
