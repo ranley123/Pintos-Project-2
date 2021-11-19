@@ -74,7 +74,7 @@ syscall_handler (struct intr_frame *f UNUSED)
 				/* The first argument of exec is the entire command line text for executing the program */
 				get_stack_arguments(f, &args[0], 1);
 
-        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        phys_page_ptr = check_valid_page((const void *) args[0]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -98,7 +98,7 @@ syscall_handler (struct intr_frame *f UNUSED)
            and the second argument is the size of the file. */
 				get_stack_arguments(f, &args[0], 2);
         check_buffer((void *)args[0], args[1]);
-        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        phys_page_ptr = check_valid_page((const void *) args[0]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -126,7 +126,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* The first argument is the name of the file to be opened. */
         get_stack_arguments(f, &args[0], 1);
 
-        void * phys_page_ptr = check_valid_page((const void *) args[0]);
+        phys_page_ptr = check_valid_page((const void *) args[0]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -153,7 +153,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
 
-        void * phys_page_ptr = check_valid_page((const void *) args[1]);
+        phys_page_ptr = check_valid_page((const void *) args[1]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
@@ -171,7 +171,7 @@ syscall_handler (struct intr_frame *f UNUSED)
         /* Make sure the whole buffer is valid. */
         check_buffer((void *)args[1], args[2]);
 
-        void * phys_page_ptr = check_valid_page((const void *) args[1]);
+        phys_page_ptr = check_valid_page((const void *) args[1]);
         if(phys_page_ptr == NULL){
           exit(-1);
         }
