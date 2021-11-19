@@ -103,7 +103,8 @@ struct thread
    struct semaphore being_waited_on; /* Used to put a parent thread to sleep when it needs to wait for a child. */
    struct list file_descriptors;     /* List of file descriptors belonging to this therad. */
    int cur_fd;                       /* An integer available file descriptor. */
-   struct lock lock_child;
+   bool is_waited; 
+   struct lock child_lock;
 #endif
 
    /* Owned by thread.c. */
