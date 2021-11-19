@@ -143,10 +143,9 @@ process_wait (tid_t child_tid UNUSED)
   /* If not our child, we musn't wait. */
   if(child_thread == NULL || child_thread->is_waited)
   {
-    // lock_release(&thread_current()->child_lock);
-    
     return -1;
   }
+  child_thread->is_waited = true;
 
   // lock_acquire(&thread_current()->child_lock);
   // child_thread->is_waited = true;
