@@ -15,6 +15,7 @@
 
 static void syscall_handler (struct intr_frame *);
 void * check_valid_page(void *ptr);
+struct thread_file* find_thread_file_by_fd(int fd);
 
 /* Get up to three arguments from a programs stack (they directly follow the system
 call argument). */
