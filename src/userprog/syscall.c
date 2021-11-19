@@ -335,9 +335,6 @@ int open (const char *file)
 /* Returns the size, in bytes, of the file open as fd. */
 int filesize (int fd)
 {
-  /* list element to iterate the list of file descriptors. */
-  struct list_elem *temp;
-
   lock_acquire(&lock_filesys);
 
   struct thread_file *t = find_thread_file_by_fd(fd);
@@ -356,9 +353,6 @@ int filesize (int fd)
    Fd 0 reads from the keyboard using input_getc(). */
 int read (int fd, void *buffer, unsigned length)
 {
-  /* list element to iterate the list of file descriptors. */
-  struct list_elem *temp;
-
   lock_acquire(&lock_filesys);
 
   /* If fd is one, then we must get keyboard input. */
@@ -392,35 +386,14 @@ int read (int fd, void *buffer, unsigned length)
    of 0 is the file's start.) */
 void seek (int fd, unsigned position)
 {
-  /* list element to iterate the list of file descriptors. */
-  struct list_elem *temp;
-
   lock_acquire(&lock_filesys);
-
-  /* If there are no files to seek through, then we immediately return. */
-  if (list_empty(&thread_current()->file_descriptors))
-  {
+  struct thread_file *t = find_thread_file_by_fd(fd);
+  if(t == NULL){
     lock_release(&lock_filesys);
     return;
   }
-
-  /* Look to see if the given fd is in our list of file_descriptors. IF so, then we
-     seek through the appropriate file. */
-  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
-  {
-      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
-      if (t->file_descriptor == fd)
-      {
-        file_seek(t->file_addr, position);
-        lock_release(&lock_filesys);
-        return;
-      }
-  }
-
+  file_seek(t->file_addr, position);
   lock_release(&lock_filesys);
-
-  /* If we can't seek, return. */
-  return;
 }
 
 /* Returns the position of the next byte to be read or written in open file fd,
@@ -461,25 +434,8 @@ unsigned tell (int fd)
    all its open file descriptors, as if by calling this function for each one. */
 void close (int fd)
 {
-  /* list element to iterate the list of file descriptors. */
-  struct list_elem *temp;
-
   lock_acquire(&lock_filesys);
 
-  
-  /* Look to see if the given fd is in our list of file_descriptors. If so, then we
-     close the file and remove it from our list of file_descriptors. */
-  for (temp = list_front(&thread_current()->file_descriptors); temp != NULL; temp = temp->next)
-  {
-      struct thread_file *t = list_entry (temp, struct thread_file, file_elem);
-      if (t->file_descriptor == fd)
-      {
-        file_close(t->file_addr);
-        list_remove(&t->file_elem);
-        lock_release(&lock_filesys);
-        return;
-      }
-  }
   struct thread_file* t = find_thread_file_by_fd(fd);
   if(t == NULL){
     lock_release(&lock_filesys);
