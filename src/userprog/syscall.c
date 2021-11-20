@@ -245,8 +245,8 @@ void halt (void)
 void exit (int status)
 {
 	thread_current()->exit_status = status;
-  thread_exit ();
 	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
+  thread_exit ();
 }
 
 /* Writes LENGTH bytes from BUFFER to the open file FD. Returns the number of bytes actually written,
@@ -301,8 +301,7 @@ bool create (const char *file, unsigned initial_size)
    the success of the operation. */
 bool remove (const char *file)
 {
-  bool was_removed = filesys_remove(file);
-  return was_removed;
+  return filesys_remove(file);
 }
 
 /* Opens a file with the given name, and returns the file descriptor assigned by the
