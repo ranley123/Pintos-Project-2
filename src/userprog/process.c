@@ -156,7 +156,6 @@ process_wait (tid_t child_tid UNUSED)
      function for a second time does not require additional waiting. */
   list_remove(&child_thread->child_elem);
 
-
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
   sema_down(&child_thread->being_waited_on);

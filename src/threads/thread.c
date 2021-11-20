@@ -291,8 +291,9 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
-  /* Tell my parent thread to stop waiting. */
+  
   sema_up(&thread_current ()->being_waited_on);
+  
 
 #ifdef USERPROG
   process_exit ();
