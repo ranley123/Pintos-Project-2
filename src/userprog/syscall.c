@@ -20,6 +20,7 @@ struct thread_file* find_thread_file_by_fd(int fd);
 /* Get up to three arguments from a programs stack (they directly follow the system
 call argument). */
 void get_stack_arguments (struct intr_frame *f, int * args, int num_of_args);
+struct lock file_lock;
 
 /* Creates a struct to insert files and their respective file descriptor into
    the file_descriptors list for the current thread. */
@@ -38,6 +39,7 @@ syscall_init (void)
 {
   /* Initialize the lock for the file system. */
   lock_init(&lock_filesys);
+  lock_init(&file_lock);
 
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
@@ -82,7 +84,9 @@ syscall_handler (struct intr_frame *f UNUSED)
         args[0] = (int) phys_page_ptr;
 
         /* Return the result of the exec() function in the eax register. */
+        lock_acquire(&file_lock);
 				f->eax = exec((const char *) args[0]);
+        lock_release(&file_lock);
 				break;
 
 			case SYS_WAIT:
@@ -133,8 +137,10 @@ syscall_handler (struct intr_frame *f UNUSED)
         }
         args[0] = (int) phys_page_ptr;
 
+        lock_acquire(&file_lock);
         /* Return the result of the remove() function in the eax register. */
         f->eax = open((const char *) args[0]);
+        lock_release(&file_lock);
 
 				break;
 
@@ -160,8 +166,10 @@ syscall_handler (struct intr_frame *f UNUSED)
         }
         args[1] = (int) phys_page_ptr;
 
+        lock_acquire(&file_lock);
         /* Return the result of the read() function in the eax register. */
         f->eax = read(args[0], (void *) args[1], (unsigned) args[2]);
+        lock_release(&file_lock);
 				break;
 
 			case SYS_WRITE:
@@ -178,8 +186,10 @@ syscall_handler (struct intr_frame *f UNUSED)
         }
         args[1] = (int) phys_page_ptr;
 
+        lock_acquire(&file_lock);
         /* Return the result of the write() function in the eax register. */
         f->eax = write(args[0], (const void *) args[1], (unsigned) args[2]);
+        lock_release(&file_lock);
         break;
 
 			case SYS_SEEK:
