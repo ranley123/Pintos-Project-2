@@ -279,16 +279,6 @@ pid_t exec (const char * file)
 	{
 		return -1;
 	}
-  char* fn_copy = NULL;
-  char * saveptr;
-  strlcpy (fn_copy, file, PGSIZE);
-  char * name = strtok_r((char *)fn_copy, " ", &saveptr);
-
-  struct file *f = filesys_open (name);
-  if (f == NULL)
-    {
-      return -1;
-    }
 
 	pid_t child_tid = process_execute(file);
 	return child_tid;
