@@ -247,29 +247,29 @@ int write (int fd, const void *buffer, unsigned length)
   /* list element to iterate the list of file descriptors. */
   struct list_elem *temp;
 
-  lock_acquire(&lock_filesys);
+  // lock_acquire(&lock_filesys);
 
   /* If fd is equal to one, then we write to STDOUT (the console, usually). */
 	if(fd == 1)
 	{
 		putbuf(buffer, length);
-    lock_release(&lock_filesys);
+    // lock_release(&lock_filesys);
     return length;
 	}
   /* If the user passes STDIN or no files are present, then return 0. */
   if (fd == 0)
   {
-    lock_release(&lock_filesys);
+    // lock_release(&lock_filesys);
     return 0;
   }
 
   struct thread_file *t = find_thread_file_by_fd(fd);
   if(t == NULL){
-    lock_release(&lock_filesys);
+    // lock_release(&lock_filesys);
     return 0;
   }
   int bytes = (int) file_write(t->file_addr, buffer, length);
-  lock_release(&lock_filesys);
+  // lock_release(&lock_filesys);
   return bytes;
 }
 
@@ -281,10 +281,10 @@ pid_t exec (const char * file)
 	{
 		return -1;
 	}
-  lock_acquire(&lock_filesys);
+  // lock_acquire(&lock_filesys);
   /* Get and return the PID of the process that is created. */
 	pid_t child_tid = process_execute(file);
-  lock_release(&lock_filesys);
+  // lock_release(&lock_filesys);
 	return child_tid;
 }
 
@@ -320,14 +320,14 @@ bool remove (const char *file)
 int open (const char *file)
 {
   /* Make sure that only one process can get ahold of the file system at one time. */
-  lock_acquire(&lock_filesys);
+  // lock_acquire(&lock_filesys);
 
   struct file* f = filesys_open(file);
 
   /* If no file was created, then return -1. */
   if(f == NULL)
   {
-    lock_release(&lock_filesys);
+    // lock_release(&lock_filesys);
     return -1;
   }
 
@@ -339,7 +339,7 @@ int open (const char *file)
   thread_current ()->cur_fd++;
   new_file->file_descriptor = fd;
   list_push_front(&thread_current ()->file_descriptors, &new_file->file_elem);
-  lock_release(&lock_filesys);
+  // lock_release(&lock_filesys);
   return fd;
 }
 
@@ -364,30 +364,30 @@ int filesize (int fd)
    Fd 0 reads from the keyboard using input_getc(). */
 int read (int fd, void *buffer, unsigned length)
 {
-  lock_acquire(&lock_filesys);
+  // lock_acquire(&lock_filesys);
 
   /* If fd is one, then we must get keyboard input. */
   if (fd == 0)
   {
-    lock_release(&lock_filesys);
+    // lock_release(&lock_filesys);
     return (int) input_getc();
   }
 
   /* We can't read from standard out, or from a file if we have none open. */
   if (fd == 1)
   {
-    lock_release(&lock_filesys);
+    // lock_release(&lock_filesys);
     return 0;
   }
 
   struct thread_file *t = find_thread_file_by_fd(fd);
   if(t == NULL){
-    lock_release(&lock_filesys);
+    // lock_release(&lock_filesys);
     return -1;
   }
   
   int bytes = (int) file_read(t->file_addr, buffer, length);
-  lock_release(&lock_filesys);
+  // lock_release(&lock_filesys);
   return bytes;
 }
 
