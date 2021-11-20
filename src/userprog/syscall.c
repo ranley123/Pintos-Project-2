@@ -280,11 +280,11 @@ pid_t exec (const char * file)
 		return -1;
 	}
 
-  struct file *f = filesys_open (file);
-  if (f == NULL)
-    {
-      return -1;
-    }
+  // struct file *f = filesys_open (file);
+  // if (f == NULL)
+  //   {
+  //     return -1;
+  //   }
 
 	pid_t child_tid = process_execute(file);
 	return child_tid;
@@ -321,15 +321,9 @@ bool remove (const char *file)
    Design2.txt for attribution link). */
 int open (const char *file)
 {
-  /* Make sure that only one process can get ahold of the file system at one time. */
-  // lock_acquire(&lock_filesys);
-
   struct file* f = filesys_open(file);
-
-  /* If no file was created, then return -1. */
   if(f == NULL)
   {
-    // lock_release(&lock_filesys);
     return -1;
   }
 
@@ -341,7 +335,6 @@ int open (const char *file)
   thread_current ()->cur_fd++;
   new_file->file_descriptor = fd;
   list_push_front(&thread_current ()->file_descriptors, &new_file->file_elem);
-  // lock_release(&lock_filesys);
   return fd;
 }
 
@@ -378,19 +371,11 @@ int read (int fd, void *buffer, unsigned length)
   /* We can't read from standard out, or from a file if we have none open. */
   if (fd == 1)
   {
-    // lock_release(&lock_filesys);
     return 0;
   }
 
   struct thread_file *t = find_thread_file_by_fd(fd);
-  if(t == NULL){
-    // lock_release(&lock_filesys);
-    return -1;
-  }
-  
-  int bytes = (int) file_read(t->file_addr, buffer, length);
-  // lock_release(&lock_filesys);
-  return bytes;
+  return t == NULL? -1: (int) file_read(t->file_addr, buffer, length);
 }
 
 
