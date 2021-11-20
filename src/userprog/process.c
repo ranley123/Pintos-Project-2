@@ -147,10 +147,7 @@ process_wait (tid_t child_tid UNUSED)
   }
   child_thread->is_waited = true;
 
-  // lock_acquire(&thread_current()->child_lock);
-  // child_thread->is_waited = true;
-  // lock_release(&thread_current()->child_lock);
-
+  printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
   list_remove(&child_thread->child_elem);
@@ -164,7 +161,6 @@ process_wait (tid_t child_tid UNUSED)
 
   
   // 
-  printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   return child_thread->exit_status;
 }
 
