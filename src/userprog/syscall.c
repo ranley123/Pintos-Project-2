@@ -279,6 +279,15 @@ pid_t exec (const char * file)
 	{
 		return -1;
 	}
+
+  struct file *f = filesys_open (file);
+  if (f == NULL)
+    {
+      /* Pass only the program name. */
+      printf ("load: %s: open failed\n", file);
+      exit(-1);
+    }
+
 	pid_t child_tid = process_execute(file);
 	return child_tid;
 }
