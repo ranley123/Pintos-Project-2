@@ -50,6 +50,10 @@ process_execute (const char *file_name)
   // Modify: separate the user program file name from arguments
   char * saveptr;
   char * name = strtok_r((char *)file_name, " ", &saveptr);
+  
+  struct file* f = filesys_open(name);
+  if(f == NULL)
+    return -1;
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
@@ -65,7 +69,10 @@ process_execute (const char *file_name)
     current_tid = tid;
     enum intr_level old_level = intr_disable ();
     thread_foreach(*find_tid, NULL);
+    // lock_acquire(&thread_current()->child_lock);
     list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
+    // lock_release(&thread_current()->child_lock);
+
     intr_set_level (old_level);
   }
   return tid;
@@ -107,7 +114,6 @@ start_process (void *file_name_)
    child of the calling process, or if process_wait() has already
    been successfully called for the given TID, returns -1
    immediately, without waiting.
-
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
@@ -126,6 +132,8 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   /* Look to see if the child thread in question is our child. */
+  // lock_acquire(&thread_current()->child_lock);
+
   for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
   {
       struct thread *t = list_entry (temp, struct thread, child_elem);
@@ -137,21 +145,24 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   /* If not our child, we musn't wait. */
-  if(child_thread == NULL)
+  if(child_thread == NULL || child_thread->is_waited)
   {
     return -1;
   }
+  child_thread->is_waited = true;
 
+  // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
   list_remove(&child_thread->child_elem);
 
+
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
   sema_down(&child_thread->being_waited_on);
-
-
-  /* After our kiddo is dead, we return its exit status. */
+  // ASSERT(child_thread != NULL);
+  
+  // 
   return child_thread->exit_status;
 }
 
@@ -457,15 +468,11 @@ validate_segment (const struct Elf32_Phdr *phdr, struct file *file)
 /* Loads a segment starting at offset OFS in FILE at address
    UPAGE.  In total, READ_BYTES + ZERO_BYTES bytes of virtual
    memory are initialized, as follows:
-
         - READ_BYTES bytes at UPAGE must be read from FILE
           starting at offset OFS.
-
         - ZERO_BYTES bytes at UPAGE + READ_BYTES must be zeroed.
-
    The pages initialized by this function must be writable by the
    user process if WRITABLE is true, read-only otherwise.
-
    Return true if successful, false if a memory allocation error
    or disk read error occurs. */
 static bool
