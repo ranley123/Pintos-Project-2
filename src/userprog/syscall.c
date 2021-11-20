@@ -245,8 +245,8 @@ void halt (void)
 void exit (int status)
 {
 	thread_current()->exit_status = status;
-	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
   thread_exit ();
+	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
 }
 
 /* Writes LENGTH bytes from BUFFER to the open file FD. Returns the number of bytes actually written,
