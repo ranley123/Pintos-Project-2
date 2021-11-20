@@ -280,11 +280,14 @@ pid_t exec (const char * file)
 		return -1;
 	}
 
-  // struct file *f = filesys_open (file);
-  // if (f == NULL)
-  //   {
-  //     return -1;
-  //   }
+  char * saveptr;
+  char * name = strtok_r((char *)file, " ", &saveptr);
+
+  struct file *f = filesys_open (name);
+  if (f == NULL)
+    {
+      return -1;
+    }
 
 	pid_t child_tid = process_execute(file);
 	return child_tid;
