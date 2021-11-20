@@ -147,7 +147,7 @@ process_wait (tid_t child_tid UNUSED)
   }
   child_thread->is_waited = true;
 
-  printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
+  // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
   list_remove(&child_thread->child_elem);
@@ -156,7 +156,7 @@ process_wait (tid_t child_tid UNUSED)
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
   sema_down(&child_thread->being_waited_on);
-  ASSERT(child_thread != NULL);
+  // ASSERT(child_thread != NULL);
   
   // 
   return child_thread->exit_status;
