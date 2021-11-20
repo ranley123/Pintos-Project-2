@@ -33,14 +33,12 @@ struct thread_file
 
 /* Lock is in charge of ensuring that only one process can access the file system at one time. */
 struct lock lock_filesys;
-struct lock lock_filesys;
 
 void
 syscall_init (void)
 {
   /* Initialize the lock for the file system. */
   lock_init(&lock_filesys);
-  // lock_init(&lock_filesys);
 
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
 }
@@ -236,7 +234,7 @@ void halt (void)
 void exit (int status)
 {
 	thread_current()->exit_status = status;
-	printf("%s: exit(%d)\n", thread_current()->name, status);
+	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
   thread_exit ();
 }
 
@@ -281,10 +279,7 @@ pid_t exec (const char * file)
 	{
 		return -1;
 	}
-  // lock_acquire(&lock_filesys);
-  /* Get and return the PID of the process that is created. */
 	pid_t child_tid = process_execute(file);
-  // lock_release(&lock_filesys);
 	return child_tid;
 }
 
