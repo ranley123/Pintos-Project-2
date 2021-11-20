@@ -234,7 +234,7 @@ void halt (void)
 void exit (int status)
 {
 	thread_current()->exit_status = status;
-	printf("%s: exit(%d)\n", thread_current()->name, 11);
+	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
   thread_exit ();
 }
 

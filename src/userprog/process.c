@@ -164,6 +164,7 @@ process_wait (tid_t child_tid UNUSED)
 
   
   // 
+  printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   return child_thread->exit_status;
 }
 
