@@ -167,36 +167,36 @@ process_wait (tid_t child_tid UNUSED)
   {
     return -1;
   }
-  pcb->waiting = true;
+  // pcb->waiting = true;
 
-  if (! pcb->exited) {
-    sema_down(& (pcb->sema_wait));
-  }
-  ASSERT (pcb->exited == true);
+  // if (! pcb->exited) {
+    // sema_down(& (pcb->sema_wait));
+  // }
+  // ASSERT (pcb->exited == true);
 
-  ASSERT (child_thread != NULL);
-  list_remove (&child_thread->child_elem);
+  // ASSERT (child_thread != NULL);
+  // list_remove (&child_thread->child_elem);
 
-  int retcode = pcb->exitcode;
+  // int retcode = pcb->exitcode;
 
   // Now the pcb object of the child process can be finally freed.
   // (in this context, the child process is guaranteed to have been exited)
-  palloc_free_page(pcb);
+  // palloc_free_page(pcb);
 
-  return retcode;
+  // return retcode;
 
   // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
-  // list_remove(&child_thread->child_elem);
 
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
-  // sema_down(&child_thread->being_waited_on);
+  sema_down(&child_thread->being_waited_on);
+  list_remove(&child_thread->child_elem);
   // ASSERT(child_thread != NULL);
   
   // 
-  // return child_thread->exit_status;
+  return child_thread->exit_status;
 }
 
 /* Free the current process's resources. */
@@ -241,7 +241,7 @@ process_exit (void)
   // }
 
   cur->pcb->exited = true;
-  sema_up (&cur->pcb->sema_wait);
+  // sema_up (&cur->pcb->sema_wait);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
