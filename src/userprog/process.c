@@ -162,9 +162,12 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   /* If not our child, we musn't wait. */
-  ASSERT(pcb != NULL);
-  if(pcb == NULL || pcb->waiting)
+  if(child_thread == NULL)
   {
+    return -1;
+  }
+  ASSERT(pcb != NULL);
+  if(pcb->waiting){
     return -1;
   }
   pcb->waiting = true;
