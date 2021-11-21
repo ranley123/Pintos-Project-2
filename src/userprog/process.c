@@ -88,6 +88,7 @@ process_execute (const char *file_name)
     // lock_acquire(&thread_current()->child_lock);
     list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
     // lock_release(&thread_current()->child_lock);
+    thread_current()->pcb = pcb;
 
     intr_set_level (old_level);
   }
