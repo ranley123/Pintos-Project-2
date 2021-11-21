@@ -242,8 +242,8 @@ void halt (void)
    and its status returned to the kernel. */
 void exit (int status)
 {
-	thread_current()->exit_status = status;
-	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->exit_status);
+	thread_current()->pcb->exitcode = status;
+	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->pcb->exit_status);
   thread_exit ();
 }
 

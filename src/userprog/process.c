@@ -197,7 +197,7 @@ process_wait (tid_t child_tid UNUSED)
   // ASSERT(child_thread != NULL);
   
   // 
-  return child_thread->exit_status;
+  return pcb->exitcode;
 }
 
 /* Free the current process's resources. */
