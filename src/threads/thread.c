@@ -187,23 +187,6 @@ thread_create (const char *name, int priority,
   tid = t->tid = allocate_tid ();
 
 
-  struct PCB* pcb = palloc_get_page(0);
-  if(pcb == NULL){
-    palloc_free_page(pcb);
-  }
-  // pcb->pid = PID_INITIALIZING;
-  pcb->parent_thread = t;
-
-  // pcb->cmdline = cmdline_copy;
-  pcb->waiting = false;
-  pcb->exited = false;
-  pcb->exitcode = -1; // undefined
-
-  // sema_init(&pcb->sema_initialization, 0);
-  sema_init(&pcb->sema_wait, 0);
-
-  thread_current()->pcb = pcb;
-
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack'
      member cannot be observed. */

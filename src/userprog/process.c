@@ -85,10 +85,24 @@ process_execute (const char *file_name)
     current_tid = tid;
     enum intr_level old_level = intr_disable ();
     thread_foreach(*find_tid, NULL);
-    // lock_acquire(&thread_current()->child_lock);
     list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
-    // lock_release(&thread_current()->child_lock);
     
+    struct PCB* pcb = palloc_get_page(0);
+    if(pcb == NULL){
+      palloc_free_page(pcb);
+    }
+    // pcb->pid = PID_INITIALIZING;
+    pcb->parent_thread = matching_thread;
+
+    // pcb->cmdline = cmdline_copy;
+    pcb->waiting = false;
+    pcb->exited = false;
+    pcb->exitcode = -1; // undefined
+
+    // sema_init(&pcb->sema_initialization, 0);
+    sema_init(&pcb->sema_wait, 0);
+
+    matching_thread->pcb = pcb;
 
     intr_set_level (old_level);
   }
