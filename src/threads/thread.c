@@ -99,7 +99,7 @@ thread_init (void)
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 
-  lock_init (&thread_current()->child_lock);
+  // lock_init (&thread_current()->child_lock);
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -185,6 +185,7 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
+
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack'
@@ -291,8 +292,9 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
-  /* Tell my parent thread to stop waiting. */
+  
   sema_up(&thread_current ()->being_waited_on);
+  
 
 #ifdef USERPROG
   process_exit ();
@@ -492,6 +494,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->exit_status = -1;
 
   list_push_back (&all_list, &t->allelem);
+
+  t->pcb = NULL;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

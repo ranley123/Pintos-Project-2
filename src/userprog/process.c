@@ -55,6 +55,22 @@ process_execute (const char *file_name)
   if(f == NULL)
     return -1;
 
+  // struct PCB* pcb = palloc_get_page(0);
+  // if(pcb == NULL){
+    // palloc_free_page(pcb);
+  // }
+  // pcb->pid = PID_INITIALIZING;
+  // pcb->parent_thread = thread_current();
+
+  // pcb->cmdline = cmdline_copy;
+  // pcb->waiting = false;
+  // pcb->exited = false;
+  // pcb->exitcode = -1; // undefined
+
+  // sema_init(&pcb->sema_initialization, 0);
+  // sema_init(&pcb->sema_wait, 0);
+  
+
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
 
@@ -69,9 +85,24 @@ process_execute (const char *file_name)
     current_tid = tid;
     enum intr_level old_level = intr_disable ();
     thread_foreach(*find_tid, NULL);
-    // lock_acquire(&thread_current()->child_lock);
     list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
-    // lock_release(&thread_current()->child_lock);
+    
+    struct PCB* pcb = palloc_get_page(0);
+    if(pcb == NULL){
+      palloc_free_page(pcb);
+    }
+    // pcb->pid = PID_INITIALIZING;
+    pcb->parent_thread = matching_thread;
+
+    // pcb->cmdline = cmdline_copy;
+    pcb->waiting = false;
+    pcb->exited = false;
+    pcb->exitcode = -1; // undefined
+
+    // sema_init(&pcb->sema_initialization, 0);
+    sema_init(&pcb->sema_wait, 0);
+
+    matching_thread->pcb = pcb;
 
     intr_set_level (old_level);
   }
@@ -131,8 +162,7 @@ process_wait (tid_t child_tid UNUSED)
     return -1;
   }
 
-  /* Look to see if the child thread in question is our child. */
-  // lock_acquire(&thread_current()->child_lock);
+  struct PCB* pcb = NULL;
 
   for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
   {
@@ -140,22 +170,26 @@ process_wait (tid_t child_tid UNUSED)
       if (t->tid == child_tid)
       {
         child_thread = t;
+        pcb = t->pcb;
         break;
       }
   }
 
   /* If not our child, we musn't wait. */
-  if(child_thread == NULL || child_thread->is_waited)
+  if(child_thread == NULL)
   {
     return -1;
   }
-  child_thread->is_waited = true;
+  ASSERT(pcb != NULL);
+  if(pcb->waiting){
+    return -1;
+  }
+  pcb->waiting = true;
 
   // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
   list_remove(&child_thread->child_elem);
-
 
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
@@ -163,7 +197,7 @@ process_wait (tid_t child_tid UNUSED)
   // ASSERT(child_thread != NULL);
   
   // 
-  return child_thread->exit_status;
+  return pcb->exitcode;
 }
 
 /* Free the current process's resources. */
