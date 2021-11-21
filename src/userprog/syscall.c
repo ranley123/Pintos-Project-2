@@ -243,7 +243,7 @@ void halt (void)
 void exit (int status)
 {
 	thread_current()->pcb->exitcode = status;
-	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->pcb->exit_status);
+	printf("%s: exit(%d)\n", thread_current()->name, thread_current()->pcb->exitcode);
   thread_exit ();
 }
 
