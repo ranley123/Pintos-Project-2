@@ -192,7 +192,7 @@ thread_create (const char *name, int priority,
     palloc_free_page(pcb);
   }
   // pcb->pid = PID_INITIALIZING;
-  pcb->parent_thread = thread_current();
+  pcb->parent_thread = t;
 
   // pcb->cmdline = cmdline_copy;
   pcb->waiting = false;
@@ -203,7 +203,7 @@ thread_create (const char *name, int priority,
   sema_init(&pcb->sema_wait, 0);
 
   thread_current()->pcb = pcb;
-  
+
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack'
      member cannot be observed. */
