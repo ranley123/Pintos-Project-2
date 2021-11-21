@@ -4,7 +4,7 @@
 #include "threads/thread.h"
 struct PCB {
 
-  pid_t pid;                /* The pid of process */
+  // pid_t pid;                /* The pid of process */
 
   struct thread* parent_thread;    /* the parent process. */
 
