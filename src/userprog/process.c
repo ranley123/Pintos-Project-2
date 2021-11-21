@@ -180,7 +180,7 @@ process_wait (tid_t child_tid UNUSED)
   ASSERT (pcb->exited == true);
 
   ASSERT (child_thread != NULL);
-  list_remove (child_thread);
+  list_remove (&child_thread->child_elem);
 
   int retcode = pcb->exitcode;
 
