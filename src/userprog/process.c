@@ -148,8 +148,7 @@ process_wait (tid_t child_tid UNUSED)
     return -1;
   }
 
-  /* Look to see if the child thread in question is our child. */
-  // lock_acquire(&thread_current()->child_lock);
+  struct PCB* pcb = NULL;
 
   for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
   {
@@ -157,16 +156,17 @@ process_wait (tid_t child_tid UNUSED)
       if (t->tid == child_tid)
       {
         child_thread = t;
+        pcb = t->pcb;
         break;
       }
   }
 
   /* If not our child, we musn't wait. */
-  if(child_thread == NULL || child_thread->is_waited)
+  if(child_thread == NULL || pcb->waiting)
   {
     return -1;
   }
-  child_thread->is_waited = true;
+  pcb->waiting = true;
 
   // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
