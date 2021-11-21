@@ -30,6 +30,8 @@ static tid_t current_tid;
 
 static void push_args(void **esp, int argc, char *argv[]);
 
+struct thread_file* find_thread_file_by_fd(int fd);
+
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
    before process_execute() returns.  Returns the new process's
@@ -214,7 +216,7 @@ process_exit (void)
   struct list *fdlist = &cur->file_descriptors;
   while (!list_empty(fdlist)) {
     struct list_elem *e = list_pop_front (fdlist);
-    struct thread_file *desc = list_entry(e, struct thread_file, list_elem);
+    struct thread_file *desc = list_entry(e, struct thread_file, file_elem);
     file_close(desc->file);
     palloc_free_page(desc); // see sys_open()
   }
@@ -690,4 +692,21 @@ static void find_tid (struct thread *t, void * aux UNUSED)
   {
     matching_thread = t;
   }
+}
+
+struct thread_file* find_thread_file_by_fd(int fd){
+  if(list_empty(&thread_current()->file_descriptors)){
+    return NULL;
+  }
+
+  struct list_elem* cur = list_front(&thread_current()->file_descriptors);
+  while(cur != NULL){
+    struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
+    if (t->file_descriptor == fd)
+    {
+      return t;
+    }
+    cur = cur->next;
+  }
+  return NULL;
 }

@@ -105,7 +105,7 @@ struct thread
    int cur_fd;                       /* An integer available file descriptor. */
    bool is_waited; 
 
-   struct pcb * pcb;
+   struct PCB * pcb;
 #endif
 
    /* Owned by thread.c. */
