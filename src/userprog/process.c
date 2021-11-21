@@ -213,13 +213,13 @@ process_exit (void)
 
   /* Resources should be cleaned up */
   // 1. file descriptors
-  struct list *fdlist = &cur->file_descriptors;
-  while (!list_empty(fdlist)) {
-    struct list_elem *e = list_pop_front (fdlist);
-    struct thread_file *desc = list_entry(e, struct thread_file, file_elem);
-    file_close(desc->file);
-    palloc_free_page(desc); // see sys_open()
-  }
+  // struct list *fdlist = &cur->file_descriptors;
+  // while (!list_empty(fdlist)) {
+  //   struct list_elem *e = list_pop_front (fdlist);
+  //   struct thread_file *desc = list_entry(e, struct thread_file, file_elem);
+  //   file_close(desc->file);
+  //   palloc_free_page(desc); // see sys_open()
+  // }
 
   // // 2. clean up pcb object of all children processes
   // struct list *child_list = &cur->child_process_list;
