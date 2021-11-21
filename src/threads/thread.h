@@ -104,7 +104,8 @@ struct thread
    struct list file_descriptors;     /* List of file descriptors belonging to this therad. */
    int cur_fd;                       /* An integer available file descriptor. */
    bool is_waited; 
-   struct lock child_lock;
+
+   struct pcb * pcb;
 #endif
 
    /* Owned by thread.c. */

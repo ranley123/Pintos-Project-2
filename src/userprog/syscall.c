@@ -220,8 +220,6 @@ syscall_handler (struct intr_frame *f UNUSED)
 			case SYS_CLOSE:
         /* close has exactly one stack argument, representing the fd of the file. */
         get_stack_arguments(f, &args[0], 1);
-
-        /* We close the file referenced by the fd. */
         lock_acquire(&lock_filesys);
         close(args[0]);
         lock_release(&lock_filesys);

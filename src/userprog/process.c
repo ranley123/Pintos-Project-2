@@ -39,6 +39,7 @@ process_execute (const char *file_name)
 {
   char *fn_copy;
   tid_t tid;
+  struct PCB *pcb = NULL;
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
@@ -54,6 +55,21 @@ process_execute (const char *file_name)
   struct file* f = filesys_open(name);
   if(f == NULL)
     return -1;
+
+  pcb = palloc_get_page(0);
+  if(pcb == NULL){
+    palloc_free_page(pcb);
+  }
+  // pcb->pid = PID_INITIALIZING;
+  pcb->parent_thread = thread_current();
+
+  // pcb->cmdline = cmdline_copy;
+  pcb->waiting = false;
+  pcb->exited = false;
+  pcb->exitcode = -1; // undefined
+
+  // sema_init(&pcb->sema_initialization, 0);
+  sema_init(&pcb->sema_wait, 0);
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
@@ -74,6 +90,8 @@ process_execute (const char *file_name)
     // lock_release(&thread_current()->child_lock);
 
     intr_set_level (old_level);
+
+    thread_current()->pcb = pcb;
   }
   return tid;
 }
@@ -134,35 +152,54 @@ process_wait (tid_t child_tid UNUSED)
   /* Look to see if the child thread in question is our child. */
   // lock_acquire(&thread_current()->child_lock);
 
+  struct PCB* pcb = NULL;
+
   for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
   {
       struct thread *t = list_entry (temp, struct thread, child_elem);
       if (t->tid == child_tid)
       {
         child_thread = t;
+        pcb = t->pcb;
         break;
       }
   }
 
   /* If not our child, we musn't wait. */
-  if(child_thread == NULL || child_thread->is_waited)
+  if(child_thread == NULL || pcb->waiting)
   {
     return -1;
   }
-  child_thread->is_waited = true;
+  pcb->waiting = true;
+
+  if (! pcb->exited) {
+    sema_down(& (pcb->sema_wait));
+  }
+  ASSERT (pcb->exited == true);
+
+  ASSERT (child_thread != NULL);
+  list_remove (child_thread);
+
+  int retcode = pcb->exitcode;
+
+  // Now the pcb object of the child process can be finally freed.
+  // (in this context, the child process is guaranteed to have been exited)
+  palloc_free_page(pcb);
+
+  return retcode;
 
   // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
      function for a second time does not require additional waiting. */
-  list_remove(&child_thread->child_elem);
+  // list_remove(&child_thread->child_elem);
 
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
-  sema_down(&child_thread->being_waited_on);
+  // sema_down(&child_thread->being_waited_on);
   // ASSERT(child_thread != NULL);
   
   // 
-  return child_thread->exit_status;
+  // return child_thread->exit_status;
 }
 
 /* Free the current process's resources. */
@@ -171,6 +208,43 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  /* Resources should be cleaned up */
+  // 1. file descriptors
+  struct list *fdlist = &cur->file_descriptors;
+  while (!list_empty(fdlist)) {
+    struct list_elem *e = list_pop_front (fdlist);
+    struct thread_file *desc = list_entry(e, struct thread_file, list_elem);
+    file_close(desc->file);
+    palloc_free_page(desc); // see sys_open()
+  }
+
+  // // 2. clean up pcb object of all children processes
+  // struct list *child_list = &cur->child_process_list;
+  // while (!list_empty(child_list)) {
+  //   struct list_elem *e = list_pop_front (child_list);
+  //   struct thread* t = list_entry (temp, struct thread, child_elem);
+  //   struct PCB *pcb = t->pcb;
+
+  //   if (pcb->exited == true) {
+  //     // pcb can freed when it is already terminated
+  //     palloc_free_page (pcb);
+  //   } else {
+  //     // the child process becomes an orphan.
+  //     // do not free pcb yet, postpone until the child terminates
+  //     pcb->orphan = true;
+  //     pcb->parent_thread = NULL;
+  //   }
+  // }
+
+  // /* Release file for the executable */
+  // if(cur->executing_file) {
+  //   file_allow_write(cur->executing_file);
+  //   file_close(cur->executing_file);
+  // }
+
+  cur->pcb->exited = true;
+  sema_up (&cur->pcb->sema_wait);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
