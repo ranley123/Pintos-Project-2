@@ -30,7 +30,7 @@ static tid_t current_tid;
 
 static void push_args(void **esp, int argc, char *argv[]);
 
-struct thread_file* find_thread_file_by_fd(int fd);
+// struct thread_file* find_thread_file_by_fd(int fd);
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -694,19 +694,19 @@ static void find_tid (struct thread *t, void * aux UNUSED)
   }
 }
 
-struct thread_file* find_thread_file_by_fd(int fd){
-  if(list_empty(&thread_current()->file_descriptors)){
-    return NULL;
-  }
+// struct thread_file* find_thread_file_by_fd(int fd){
+//   if(list_empty(&thread_current()->file_descriptors)){
+//     return NULL;
+//   }
 
-  struct list_elem* cur = list_front(&thread_current()->file_descriptors);
-  while(cur != NULL){
-    struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
-    if (t->file_descriptor == fd)
-    {
-      return t;
-    }
-    cur = cur->next;
-  }
-  return NULL;
-}
+//   struct list_elem* cur = list_front(&thread_current()->file_descriptors);
+//   while(cur != NULL){
+//     struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
+//     if (t->file_descriptor == fd)
+//     {
+//       return t;
+//     }
+//     cur = cur->next;
+//   }
+//   return NULL;
+// }
