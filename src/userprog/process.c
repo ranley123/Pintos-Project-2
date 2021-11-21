@@ -87,9 +87,7 @@ process_execute (const char *file_name)
     current_tid = tid;
     enum intr_level old_level = intr_disable ();
     thread_foreach(*find_tid, NULL);
-    // lock_acquire(&thread_current()->child_lock);
     list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
-    // lock_release(&thread_current()->child_lock);
 
     intr_set_level (old_level);
 
@@ -150,9 +148,6 @@ process_wait (tid_t child_tid UNUSED)
   {
     return -1;
   }
-
-  /* Look to see if the child thread in question is our child. */
-  // lock_acquire(&thread_current()->child_lock);
 
   struct PCB* pcb = NULL;
 
