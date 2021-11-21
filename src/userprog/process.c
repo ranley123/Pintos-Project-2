@@ -163,7 +163,7 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   /* If not our child, we musn't wait. */
-  if(child_thread == NULL || pcb->waiting)
+  if(child_thread == NULL)
   {
     return -1;
   }
@@ -191,8 +191,8 @@ process_wait (tid_t child_tid UNUSED)
 
   /* Put the current thread to sleep by waiting on the child thread whose
      PID was passed in. */
-  sema_down(&child_thread->being_waited_on);
   list_remove(&child_thread->child_elem);
+  sema_down(&child_thread->being_waited_on);
   // ASSERT(child_thread != NULL);
   
   // 
