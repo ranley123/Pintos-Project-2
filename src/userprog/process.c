@@ -162,11 +162,11 @@ process_wait (tid_t child_tid UNUSED)
   }
 
   /* If not our child, we musn't wait. */
-  if(child_thread == NULL || pcb->waiting)
+  if(child_thread == NULL || child_thread->is_waited)
   {
     return -1;
   }
-  pcb->waiting = true;
+  child_thread->is_waited = true;
 
   // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
   /* Remove the child from our lists of child threads, so that calling this
