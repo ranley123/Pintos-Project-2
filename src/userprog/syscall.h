@@ -22,11 +22,19 @@ void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
 
-/* Ensures that a given pointer is in valid user memory. */
+// check address is valid
 void check_valid_addr (const void *ptr_to_check);
 
-/* Ensures that each memory address in a given buffer is in valid user space. */
+// check buffer is valid in memory
 void check_buffer (void *buff_to_check, unsigned size);
 
+// check if ptr is a valid page
+void * check_valid_page(void *ptr);
+
+// find file entry by its file descriptor
+struct file_entry* find_file_entry_by_fd(int fd);
+
+// get arguments from stack
+void get_args (struct intr_frame *f, int * args, int argc);
 
 #endif /* userprog/syscall.h */
