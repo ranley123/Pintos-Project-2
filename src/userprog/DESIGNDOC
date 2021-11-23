@@ -170,7 +170,7 @@ When error is detected, We check whether the fault_addr is valid pointer, also u
 >> fails, so it cannot return before the new executable has completed
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
-
+The exec() will return the return code of child process, so it must wait until the child process terminiates. The process_wait() will look at child processes' being_waited_on semaphore. Once the child exits, the parent will be invoked and notified to do the next step. 
 
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
@@ -187,10 +187,7 @@ Invokes the child's waiting semaphore and sleep until child exits. The child exi
 Since C is exited, it will not shown in P's child process list, so parent process directly exits.
 
 * P terminates without waiting before C exits
-The list inside P will be free, the lock will be released, since no one will
-wait a signal except parent, condition don’t need to be signaled. When C tries
-to set it’s status and find out parent has exited, it will ignore it and
-continue to execute.
+P will be freed and no process will wait for C. Therefore, C will still run and exit and its semaphore will not be 'down' by P.
 
 * P terminates after C exits
 P can directly exit.
