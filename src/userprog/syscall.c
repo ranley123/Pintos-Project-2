@@ -15,6 +15,25 @@
 
 static void syscall_handler (struct intr_frame *);
 
+// check if ptr is a valid page
+void * check_valid_page(void *ptr);
+
+// find file entry by its file descriptor
+struct file_entry* find_file_entry_by_fd(int fd);
+
+// get arguments from stack
+void get_args (struct intr_frame *f, int * args, int argc);
+
+
+// create a struct to store the current thread's file descriptors and 
+// related information
+struct file_entry
+{
+    struct list_elem file_elem;
+    struct file *file_addr;
+    int file_descriptor;
+};
+
 /* Lock is in charge of ensuring that only one process can access the file system at one time. */
 struct lock lock_filesys;
 
