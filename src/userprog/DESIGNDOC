@@ -1,0 +1,213 @@
+		     +--------------------------+
+       	       	     |		CS 140		|
+		     | PROJECT 2: USER PROGRAMS	|
+		     | 	   DESIGN DOCUMENT     	|
+		     +--------------------------+
+
+---- GROUP ----
+
+>> Fill in the names and email addresses of your group members.
+Myself
+
+---- PRELIMINARIES ----
+
+>> If you have any preliminary comments on your submission, notes for the
+>> TAs, or extra credit, please give them here.
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+
+			   ARGUMENT PASSING
+			   ================
+
+---- DATA STRUCTURES ----
+
+>> A1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+None.
+
+---- ALGORITHMS ----
+
+>> A2: Briefly describe how you implemented argument parsing.  How do
+>> you arrange for the elements of argv[] to be in the right order?
+>> How do you avoid overflowing the stack page?
+1. split the command line into tokens and read them into an array argv[] in order. The order should be the same as the little endian.
+2. A function push_args() to push arguments from the argv[], from tail to head. In this way, I make sure they are in the right order. For each argument, I stored its address in a new array. After pushing all values of arguments, addresses of them are pushed into the stack, and then more elements are pushed based on the requirement.
+3. During pushing, the word alignment is kept.
+
+I did not design for the overflowing checking. My implementation did not consider the stack space in advance. However, in further implementation, overflowing can be treated as an exception and I can handle it later in the try-catch block, where exit(-1) is used. This approach is simple and makes sense.
+
+
+---- RATIONALE ----
+
+>> A3: Why does Pintos implement strtok_r() but not strtok()?
+The save_ptr (placeholder) in strtok_r() is provided by the caller function. 
+The remaining string is useful containing some arguments which might be used in future, so strtok_r() is better than strtok(). 
+
+>> A4: In Pintos, the kernel separates commands into a executable name
+>> and arguments.  In Unix-like systems, the shell does this
+>> separation.  Identify at least two advantages of the Unix approach.
+1. less time consumed in the kernel during processing
+2. avoid invalid inputs before passing it into low-level system calls. Kernel failures can be avoided.
+
+			     SYSTEM CALLS
+			     ============
+
+---- DATA STRUCTURES ----
+
+>> B1: Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+struct file_entry
+{
+    struct list_elem file_elem;
+    struct file *file_addr;
+    int file_descriptor;
+};
+This is to record each thread's file information, including address and list element, and file descriptor. It will be added into a list maintained by the thread whenever open() or close() happens.
+
+struct PCB {
+  struct thread* parent_thread;    /* the parent process. */
+
+  bool waiting;             // whether it is waited by
+  int32_t exitcode;         // the exit status
+};
+This is to record each process's information, including waiting status and exitcode status. After a thread is destroyed or exited, the information will be kept to be returned.
+
+In thread.h, more attributes are added into the declaration
+   uint32_t *pagedir;                // page directory
+   struct list child_process_list;   // list of child processes
+   struct list_elem child_elem;      // child element in the list
+   struct semaphore being_waited_on; // semaphore for waiting
+   struct list file_descriptors;     // this thread's file descriptors maintained
+   int cur_fd;                       // the size of file descriptors
+
+   struct PCB * pcb;
+
+This is for its child processes and waiting condition. File descriptors are maintained and pcb is for recording its status after exiting.
+
+>> B2: Describe how file descriptors are associated with open files.
+>> Are file descriptors unique within the entire OS or just within a
+>> single process?
+Each file descriptor corresponds to a unique opened file. It is unique just within a single process, because each thread will maintain a list of file descriptors and file_entry to ensure uniqueness. A opened file's details can be located by its file descriptor.
+
+---- ALGORITHMS ----
+
+>> B3: Describe your code for reading and writing user data from the
+>> kernel.
+Read
+1. check if the buffer and buffer + size are both valid, if not then
+exit(-1). The filesys_lock works to avoid concurrent problems. 
+2. check if fd is for STDOUT or STDIN. If it is STDOUT, then release
+the lock and return -1. If fd is STDIN, then retrieve keys from standard
+input. After that, release the lock and return 0.
+3. Otherwise, find the open file given the fd number from the list. Then use read function provided by filesys to read the file
+4. Release the lock and return.
+
+Write similar to Read
+1. check if the buffer and buffer + size are both valid, if not then
+exit(-1). The filesys_lock works to avoid concurrent problems. 
+2. check if fd is for STDOUT or STDIN. If it is STDIN, then release
+the lock and return -1. If fd is STDOUT, then write. After that, release the lock and return 0.
+3. Otherwise, find the open file given the fd number from the list. Then use write function provided by filesys to write the file
+4. Release the lock and return.
+
+>> B4: Suppose a system call causes a full page (4,096 bytes) of data
+>> to be copied from user space into the kernel.  What is the least
+>> and the greatest possible number of inspections of the page table
+>> (e.g. calls to pagedir_get_page()) that might result?  What about
+>> for a system call that only copies 2 bytes of data?  Is there room
+>> for improvement in these numbers, and how much?
+
+For a full page of data:
+The least number is 1. If the first inspection(pagedir_get_page) get a page head
+back, which can be tell from the address, we don’t actually need to inspect any
+more, it can contain one page of data.
+
+The greatest number might be 4096 if it’s not contiguous, in that case we have
+to check every address to ensure a valid access. When it’s contiguous, the
+greatest number would be 2, if we get a kernel virtual address that is not a
+page head, we surely want to check the start pointer and the end pointer of the
+full page data, see if it’s mapped. 
+
+
+For 2 bytes of data:
+The least number will be 1. Like above, if we get back a kernel virtual address
+that has more than 2 bytes space to the end of page, we know it’s in this page,
+another inspection is not necessary.
+
+The greatest number will also be 2. If it’s not contiguous or if it’s contiguous
+but we get back a kernel virtual address that only 1 byte far from the end of
+page, we have to inspect where the other byte is located. 
+
+Improvements:
+We don’t see much room to improve. 
+
+>> B5: Briefly describe your implementation of the "wait" system call
+>> and how it interacts with process termination.
+
+>> B6: Any access to user program memory at a user-specified address
+>> can fail due to a bad pointer value.  Such accesses must cause the
+>> process to be terminated.  System calls are fraught with such
+>> accesses, e.g. a "write" system call requires reading the system
+>> call number from the user stack, then each of the call's three
+>> arguments, then an arbitrary amount of user memory, and any of
+>> these can fail at any point.  This poses a design and
+>> error-handling problem: how do you best avoid obscuring the primary
+>> function of code in a morass of error-handling?  Furthermore, when
+>> an error is detected, how do you ensure that all temporarily
+>> allocated resources (locks, buffers, etc.) are freed?  In a few
+>> paragraphs, describe the strategy or strategies you adopted for
+>> managing these issues.  Give an example.
+
+---- SYNCHRONIZATION ----
+
+>> B7: The "exec" system call returns -1 if loading the new executable
+>> fails, so it cannot return before the new executable has completed
+>> loading.  How does your code ensure this?  How is the load
+>> success/failure status passed back to the thread that calls "exec"?
+
+>> B8: Consider parent process P with child process C.  How do you
+>> ensure proper synchronization and avoid race conditions when P
+>> calls wait(C) before C exits?  After C exits?  How do you ensure
+>> that all resources are freed in each case?  How about when P
+>> terminates without waiting, before C exits?  After C exits?  Are
+>> there any special cases?
+
+---- RATIONALE ----
+
+>> B9: Why did you choose to implement access to user memory from the
+>> kernel in the way that you did?
+
+>> B10: What advantages or disadvantages can you see to your design
+>> for file descriptors?
+
+>> B11: The default tid_t to pid_t mapping is the identity mapping.
+>> If you changed it, what advantages are there to your approach?
+
+			   SURVEY QUESTIONS
+			   ================
+
+Answering these questions is optional, but it will help us improve the
+course in future quarters.  Feel free to tell us anything you
+want--these questions are just to spur your thoughts.  You may also
+choose to respond anonymously in the course evaluations at the end of
+the quarter.
+
+>> In your opinion, was this assignment, or any one of the three problems
+>> in it, too easy or too hard?  Did it take too long or too little time?
+
+>> Did you find that working on a particular part of the assignment gave
+>> you greater insight into some aspect of OS design?
+
+>> Is there some particular fact or hint we should give students in
+>> future quarters to help them solve the problems?  Conversely, did you
+>> find any of our guidance to be misleading?
+
+>> Do you have any suggestions for the TAs to more effectively assist
+>> students, either for future quarters or the remaining projects?
+
+>> Any other comments?

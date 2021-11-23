@@ -96,12 +96,12 @@ struct thread
 
 #ifdef USERPROG
    /* Owned by userprog/process.c. */
-   uint32_t *pagedir;                /* Page directory. */
+   uint32_t *pagedir;                // page directory
    struct list child_process_list;   // list of child processes
-   struct list_elem child_elem;      /* Used to keep track of the element in the child list. */
-   struct semaphore being_waited_on; /* Used to put a parent thread to sleep when it needs to wait for a child. */
-   struct list file_descriptors;     /* List of file descriptors belonging to this therad. */
-   int cur_fd;                       /* An integer available file descriptor. */
+   struct list_elem child_elem;      // child element in the list
+   struct semaphore being_waited_on; // semaphore for waiting
+   struct list file_descriptors;     // this thread's file descriptors maintained
+   int cur_fd;                       // the size of file descriptors
 
    struct PCB * pcb;
 #endif
