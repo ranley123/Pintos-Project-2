@@ -126,32 +126,26 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED)
 {
-  /* The child thread that we're waiting on to return. */
   struct thread *child_thread = NULL;
 
-  /* list element to iterate the list of child threads. */
-  struct list_elem *temp;
-
-  /* If the list is empty, we have no children and do not need to wait. */
   if(list_empty(&thread_current()->child_process_list))
   {
     return -1;
   }
 
   struct PCB* pcb = NULL;
-
-  for (temp = list_front(&thread_current()->child_process_list); temp != NULL; temp = temp->next)
-  {
-      struct thread *t = list_entry (temp, struct thread, child_elem);
+  struct list_elem *temp = list_front(&thread_current()->child_process_list);
+  while(temp != NULL){
+    struct thread *t = list_entry (temp, struct thread, child_elem);
       if (t->tid == child_tid)
       {
         child_thread = t;
         pcb = t->pcb;
         break;
       }
+      temp = temp->next;
   }
 
-  /* If not our child, we musn't wait. */
   if(child_thread == NULL)
   {
     return -1;
@@ -169,7 +163,7 @@ process_wait (tid_t child_tid UNUSED)
   return pcb->exitcode;
 }
 
-/* Free the current process's resources. */
+// exit the process
 void
 process_exit (void)
 {
