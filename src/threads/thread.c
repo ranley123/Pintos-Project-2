@@ -489,9 +489,6 @@ init_thread (struct thread *t, const char *name, int priority)
   /* Init the semaphore in charge of putting a parent thread to sleep. */
   sema_init(&t->being_waited_on, 0);
 
-  /* We assume the exit status is bad, unless exit() is properly
-     called (and it is assigned otherwise). */
-  t->exit_status = -1;
 
   list_push_back (&all_list, &t->allelem);
 
