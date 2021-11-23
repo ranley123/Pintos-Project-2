@@ -22,7 +22,7 @@ void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
 
-// check address is valid
+// check address
 void check_valid_addr (const void *ptr_to_check);
 
 // check buffer is valid in memory
@@ -34,7 +34,6 @@ void * check_valid_page(void *ptr);
 // find file entry by its file descriptor
 struct file_entry* find_file_entry_by_fd(int fd);
 
-// get arguments from stack
-void get_args (struct intr_frame *f, int * args, int argc);
+
 
 #endif /* userprog/syscall.h */

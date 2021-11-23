@@ -15,6 +15,9 @@
 
 static void syscall_handler (struct intr_frame *);
 
+// get arguments from stack
+void get_args (struct intr_frame *f, int * args, int argc);
+
 // create a struct to store the current thread's file descriptors and 
 // related information
 struct file_entry
