@@ -15,7 +15,7 @@
 
 static void syscall_handler (struct intr_frame *);
 void * check_valid_page(void *ptr);
-struct thread_file* find_thread_file_by_fd(int fd);
+struct file_entry* find_file_entry_by_fd(int fd);
 
 /* Get up to three arguments from a programs stack (they directly follow the system
 call argument). */
@@ -24,7 +24,7 @@ void get_stack_arguments (struct intr_frame *f, int * args, int num_of_args);
 
 /* Creates a struct to insert files and their respective file descriptor into
    the file_descriptors list for the current thread. */
-struct thread_file
+struct file_entry
 {
     struct list_elem file_elem;
     struct file *file_addr;
@@ -263,7 +263,7 @@ int write (int fd, const void *buffer, unsigned length)
     return 0;
   }
 
-  struct thread_file *t = find_thread_file_by_fd(fd);
+  struct file_entry *t = find_file_entry_by_fd(fd);
 
   return t == NULL? 0: (int) file_write(t->file_addr, buffer, length);
 }
@@ -315,7 +315,7 @@ int open (const char *file)
 
   /* Create a struct to hold the file/fd, for use in a list in the current process.
      Increment the fd for future files. Release our lock and return the fd as an int. */
-  struct thread_file *new_file = malloc(sizeof(struct thread_file));
+  struct file_entry *new_file = malloc(sizeof(struct file_entry));
   new_file->file_addr = f;
   int fd = thread_current ()->cur_fd;
   thread_current ()->cur_fd++;
@@ -327,7 +327,7 @@ int open (const char *file)
 /* Returns the size, in bytes, of the file open as fd. */
 int filesize (int fd)
 {
-  struct thread_file *t = find_thread_file_by_fd(fd);
+  struct file_entry *t = find_file_entry_by_fd(fd);
   return t == NULL? -1: (int) file_length(t->file_addr);
 }
 
@@ -348,7 +348,7 @@ int read (int fd, void *buffer, unsigned length)
     return 0;
   }
 
-  struct thread_file *t = find_thread_file_by_fd(fd);
+  struct file_entry *t = find_file_entry_by_fd(fd);
   return t == NULL? -1: (int) file_read(t->file_addr, buffer, length);
 }
 
@@ -358,7 +358,7 @@ int read (int fd, void *buffer, unsigned length)
    of 0 is the file's start.) */
 void seek (int fd, unsigned position)
 {
-  struct thread_file *t = find_thread_file_by_fd(fd);
+  struct file_entry *t = find_file_entry_by_fd(fd);
   if(t == NULL){
     return;
   }
@@ -369,7 +369,7 @@ void seek (int fd, unsigned position)
    expressed in bytes from the beginning of the file. */
 unsigned tell (int fd)
 {
-  struct thread_file* t = find_thread_file_by_fd(fd);
+  struct file_entry* t = find_file_entry_by_fd(fd);
   unsigned position = (unsigned) file_tell(t->file_addr);
 
   return t == NULL? -1: position;
@@ -380,7 +380,7 @@ unsigned tell (int fd)
 void close (int fd)
 {
 
-  struct thread_file* t = find_thread_file_by_fd(fd);
+  struct file_entry* t = find_file_entry_by_fd(fd);
   if(t == NULL){
     return;
   }
@@ -437,14 +437,14 @@ void get_stack_arguments (struct intr_frame *f, int *args, int argc)
     }
 }
 
-struct thread_file* find_thread_file_by_fd(int fd){
+struct file_entry* find_file_entry_by_fd(int fd){
   if(list_empty(&thread_current()->file_descriptors)){
     return NULL;
   }
 
   struct list_elem* cur = list_front(&thread_current()->file_descriptors);
   while(cur != NULL){
-    struct thread_file *t = list_entry (cur, struct thread_file, file_elem);
+    struct file_entry *t = list_entry (cur, struct file_entry, file_elem);
     if (t->file_descriptor == fd)
     {
       return t;

@@ -55,22 +55,6 @@ process_execute (const char *file_name)
   if(f == NULL)
     return -1;
 
-  // struct PCB* pcb = palloc_get_page(0);
-  // if(pcb == NULL){
-    // palloc_free_page(pcb);
-  // }
-  // pcb->pid = PID_INITIALIZING;
-  // pcb->parent_thread = thread_current();
-
-  // pcb->cmdline = cmdline_copy;
-  // pcb->waiting = false;
-  // pcb->exited = false;
-  // pcb->exitcode = -1; // undefined
-
-  // sema_init(&pcb->sema_initialization, 0);
-  // sema_init(&pcb->sema_wait, 0);
-  
-
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (name, PRI_DEFAULT, start_process, fn_copy);
 
@@ -186,17 +170,10 @@ process_wait (tid_t child_tid UNUSED)
   }
   pcb->waiting = true;
 
-  // printf("result %s: exit(%d)\n", thread_current()->name, child_thread->exit_status);
-  /* Remove the child from our lists of child threads, so that calling this
-     function for a second time does not require additional waiting. */
   list_remove(&child_thread->child_elem);
 
-  /* Put the current thread to sleep by waiting on the child thread whose
-     PID was passed in. */
   sema_down(&child_thread->being_waited_on);
-  // ASSERT(child_thread != NULL);
   
-  // 
   return pcb->exitcode;
 }
 
@@ -555,7 +532,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 }
 
 static void push_args(void **esp, int argc, char *argv[]){
-  /* Offset PHYS_BASE as instructed. */
   *esp = PHYS_BASE - 12;
   const int OFFSET = 4;
   /* A list of addresses to the values that are intially added to the stack.  */
