@@ -123,31 +123,28 @@ the lock and return -1. If fd is STDOUT, then write. After that, release the loc
 >> for improvement in these numbers, and how much?
 
 For a full page of data:
-The least number is 1. If the first inspection(pagedir_get_page) get a page head
-back, which can be tell from the address, we don’t actually need to inspect any
-more, it can contain one page of data.
+The least number is 1. If the first pagedir_get_page() retrieves a page back, no more retriving actions are required, since it is already apage of data.
 
-The greatest number might be 4096 if it’s not contiguous, in that case we have
-to check every address to ensure a valid access. When it’s contiguous, the
-greatest number would be 2, if we get a kernel virtual address that is not a
-page head, we surely want to check the start pointer and the end pointer of the
-full page data, see if it’s mapped. 
+The greatest number might be 4096 if it’s not contiguous memory. We need to check validness for every access. When it’s contiguous, the greatest number can be 2, we might need to check the starting pointer and ending pointer.
 
 
 For 2 bytes of data:
-The least number will be 1. Like above, if we get back a kernel virtual address
-that has more than 2 bytes space to the end of page, we know it’s in this page,
-another inspection is not necessary.
+The least number is 1. If the page has more than 2 bytes available, then we dont have to have another pagedir_get_page() and validness checking.
 
-The greatest number will also be 2. If it’s not contiguous or if it’s contiguous
-but we get back a kernel virtual address that only 1 byte far from the end of
-page, we have to inspect where the other byte is located. 
+The greatest number is 2. If it’s not contiguous or if it’s contiguous but only it is 1 byte away from the end of the page, the we need to identify where is another byte.
 
 Improvements:
-We don’t see much room to improve. 
+None. 
 
 >> B5: Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
+In process_wait() do the waiting
+1. check if the inputted PID to be waited is in the current process's child process list, if not exit(-1)
+2. find the child process with the given PID, and read its PCB storing its status.
+3. check if it is already waited by a proess. If so, exit(-1). Otherwise, set its PCB's waiting status to True. This can avoid waiting twice.
+4. remove the child elem from the child process list and sema_down the waiting semaphore. Once the child process exit, then the semaphre will be 'up' and the parent process will be invoked.
+5. after invoking, the parent process will return its child process's PCB's exitcode. PCB's exitcode will be updated by the current exitcode. We need PCB because after exiting, the thread will be destroyed and exitcode needs to be stored in a safe place.
+
 
 >> B6: Any access to user program memory at a user-specified address
 >> can fail due to a bad pointer value.  Such accesses must cause the
@@ -163,6 +160,10 @@ We don’t see much room to improve.
 >> paragraphs, describe the strategy or strategies you adopted for
 >> managing these issues.  Give an example.
 
+We can use check_valid_page() and usr_addr() to validate pointers to addresses, and if they are mapped in the page directory. Taking read() as an example, the esp pointer and the three arguments pointers will be checked. If they are not valid, then exit(). The buffer will be checked based on the length. After that, they can be used.
+
+When error is detected, We check whether the fault_addr is valid pointer, also using checking functions. If it’s invalid, terminate the process. Taking the bad-jump2-test as an example, it’s trying to write an invalid address, by using the checking functions I found it is invalid, so exitcode is -1 to be returned.
+
 ---- SYNCHRONIZATION ----
 
 >> B7: The "exec" system call returns -1 if loading the new executable
@@ -170,23 +171,46 @@ We don’t see much room to improve.
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
+
 >> B8: Consider parent process P with child process C.  How do you
 >> ensure proper synchronization and avoid race conditions when P
 >> calls wait(C) before C exits?  After C exits?  How do you ensure
 >> that all resources are freed in each case?  How about when P
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
+Each process will have its PCB to record statues, and they are remained for parent processe after processes are destroyed. 
+
+* P calls wait(C) before C exits
+Invokes the child's waiting semaphore and sleep until child exits. The child exits with semaphore up so the parent is invoked. Then exitcode is retrieved and returned.
+
+* P calls wait(C) after C exits
+Since C is exited, it will not shown in P's child process list, so parent process directly exits.
+
+* P terminates without waiting before C exits
+The list inside P will be free, the lock will be released, since no one will
+wait a signal except parent, condition don’t need to be signaled. When C tries
+to set it’s status and find out parent has exited, it will ignore it and
+continue to execute.
+
+* P terminates after C exits
+P can directly exit.
+
 
 ---- RATIONALE ----
 
 >> B9: Why did you choose to implement access to user memory from the
 >> kernel in the way that you did?
+Validate the pointers and then access. This is simple but effective. Other provided functions are a little complicated.
 
 >> B10: What advantages or disadvantages can you see to your design
 >> for file descriptors?
+1. easy to manipulate and identify
+2. logically simple and intuitive. 
+However, it increases space for thread and extra functions to manage them.
 
 >> B11: The default tid_t to pid_t mapping is the identity mapping.
 >> If you changed it, what advantages are there to your approach?
+I didnt change it. It is intuitive and simple.
 
 			   SURVEY QUESTIONS
 			   ================
