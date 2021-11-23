@@ -35,5 +35,4 @@ void * check_valid_page(void *ptr);
 struct file_entry* find_file_entry_by_fd(int fd);
 
 
-
 #endif /* userprog/syscall.h */

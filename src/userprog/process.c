@@ -22,7 +22,7 @@ static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
 /* A function to be passed to the thread_foreach() function to find a thread based on tid. */
-static void find_tid (struct thread *t, void * aux);
+static void find_thread_by_tid (struct thread *t, void * aux);
 /* A global variable - the thread that we are looking for in the thread list (NULL if not found). */
 static struct thread * matching_thread;
 /* A global variable - the tid of the thread that we are looking for in the thread list (-1 if not found (set in functions)). */
@@ -40,8 +40,7 @@ process_execute (const char *file_name)
   char *fn_copy;
   tid_t tid;
 
-  /* Make a copy of FILE_NAME.
-     Otherwise there's a race between the caller and load(). */
+  // copy filename
   fn_copy = palloc_get_page (0);
   if (fn_copy == NULL)
     return TID_ERROR;
@@ -68,24 +67,17 @@ process_execute (const char *file_name)
     /* If the thread created is a valid thread, then we must disable interrupts, and add it to this threads list of child threads. */
     current_tid = tid;
     enum intr_level old_level = intr_disable ();
-    thread_foreach(*find_tid, NULL);
+    thread_foreach(*find_thread_by_tid, NULL);
     list_push_front(&thread_current()->child_process_list, &matching_thread->child_elem);
     
+    // init pcb
     struct PCB* pcb = palloc_get_page(0);
     if(pcb == NULL){
       palloc_free_page(pcb);
     }
-    // pcb->pid = PID_INITIALIZING;
     pcb->parent_thread = matching_thread;
-
-    // pcb->cmdline = cmdline_copy;
     pcb->waiting = false;
-    pcb->exited = false;
-    pcb->exitcode = -1; // undefined
-
-    // sema_init(&pcb->sema_initialization, 0);
-    sema_init(&pcb->sema_wait, 0);
-
+    pcb->exitcode = -1; 
     matching_thread->pcb = pcb;
 
     intr_set_level (old_level);
@@ -619,9 +611,8 @@ install_page (void *upage, void *kpage, bool writable)
 
 
 
-/* This function is passed to thread_foreach in order to find the thread
-   that matches a specific tid. */
-static void find_tid (struct thread *t, void * aux UNUSED)
+// find a thread given tid
+static void find_thread_by_tid (struct thread *t, void * aux UNUSED)
 {
   if(current_tid == t->tid)
   {

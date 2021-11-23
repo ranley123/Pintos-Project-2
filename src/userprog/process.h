@@ -5,14 +5,9 @@
 struct PCB {
   struct thread* parent_thread;    /* the parent process. */
 
-  bool waiting;             /* indicates whether parent process is waiting on this. */
-  bool exited;              /* indicates whether the process is done (exited). */
-  int32_t exitcode;         /* the exit code passed from exit(), when exited = true */
-
-  /* Synchronization */
-  struct semaphore sema_wait;             /* the semaphore used for wait() : parent blocks until child exits */
+  bool waiting;             // whether it is waited by
+  int32_t exitcode;         // the exit status
 };
-
 
 
 tid_t process_execute (const char *file_name);
